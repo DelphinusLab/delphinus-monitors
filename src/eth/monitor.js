@@ -8,7 +8,10 @@ const l2address = require('./l2address');
 const BigNumber = Web3.utils.BN;
 const event_queue = require('../substrate/event-queue');
 
-const client = new substrateClient.SubstrateClient(`${substrateNode.host}:${substrateNode.port}`, 15);
+let config = EthConfig[process.argv[2]];
+console.log("config:", config);
+
+const client = new substrateClient.SubstrateClient(`${substrateNode.host}:${substrateNode.port}`, parseInt(config.device_id));
 
 function to_hex_str(a) {
   let c = new BigNumber(a);
@@ -37,8 +40,6 @@ let handlers = {
   }
 }
 
-let config = EthConfig[process.argv[2]];
-console.log("config:", config);
 const BridgeJSON = require(config.contracts + "/Bridge.json");
 
 let etracker = new EthSubscriber.EventTracker(config.device_id, BridgeJSON, config, (n,v) => {

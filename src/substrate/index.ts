@@ -329,8 +329,11 @@ async function main() {
   const queue = new TransactionQueue(client);
 
   console.log("start");
-  bridge1 = await abi.getBridge(ETHConfig['ropsten'], false);
-  bridge2 = await abi.getBridge(ETHConfig['bsctestnet'], false);
+  bridge1 = await abi.getBridge(ETHConfig['localtestnet1'], false);
+  bridge2 = await abi.getBridge(ETHConfig['localtestnet2'], false);
+
+  //bridge1 = await abi.getBridge(ETHConfig['ropsten'], false);
+  //bridge2 = await abi.getBridge(ETHConfig['bsctestnet'], false);
   console.log("getBridge");
 
   await client.init();
