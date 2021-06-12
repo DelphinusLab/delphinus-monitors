@@ -11,7 +11,7 @@ const l2address: any = require("../eth/l2address");
 let bridge1: any;
 let bridge2: any;
 
-const SECTION_NAME = "templateModule";
+const SECTION_NAME = "swapModule";
 
 function dataToBN(data: any) {
   return new BN(data.toHex().replace(/0x/, ""), 16);

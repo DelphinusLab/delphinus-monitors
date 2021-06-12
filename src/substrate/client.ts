@@ -52,7 +52,7 @@ export class SubstrateClient {
   public async send(method: string, ...args: any[]) {
     const api = await this.getAPI();
     const sudo = await this.getSudo();
-    const tx = api.tx.templateModule[method](...args);
+    const tx = api.tx.swapModule[method](...args);
 
     //if (this.nonce === undefined) {
       this.nonce = new BN((await api.query.system.account((sudo as any).address)).nonce);
@@ -71,13 +71,13 @@ export class SubstrateClient {
     const api = await this.getAPI();
     const sudo = await this.getSudo();
     const accountId = ss58.addressToAddressId((sudo as any).address);
-    const l2nonce = await api.query.templateModule.nonceMap(accountId);
+    const l2nonce = await api.query.swapModule.nonceMap(accountId);
     return this.send('deposit', account, new BN(token_addr), new BN(amount), l2nonce);
   }
 
   public async getPendingReqMap() {
     const api = await this.getAPI();
-    const rawMap = await api.query.templateModule.pendingReqMap.entriesAt(this.lastHeader.hash);
+    const rawMap = await api.query.swapModule.pendingReqMap.entriesAt(this.lastHeader.hash);
     const map = new Map(rawMap.map(kv => [kv[0].args[0].toHex(), kv[1]]));
     return map;
   }
