@@ -1,10 +1,12 @@
 const EthSubscriber = require("web3subscriber/syncdb");
-const EthConfig = require('../../config/ethconfig1');
-const BridgeJSON = require(EthConfig.contracts + "/Bridge.json");
+const EthConfig = require('solidity/clients/config.js');
 
-let etracker = new EthSubscriber.EventTracker(EthConfig.device_id, BridgeJSON, EthConfig, (n,v) => {
-  handlers[n](v);
-});
+let config = EthConfig[process.argv[2]];
+console.log("config:", config);
+
+const BridgeJSON = require(config.contracts + "/Bridge.json");
+
+let etracker = new EthSubscriber.EventTracker(config.device_id, BridgeJSON, config, (n,v) => {});
 
 etracker.reset_events().then(() => {
   console.log("reset events done.");

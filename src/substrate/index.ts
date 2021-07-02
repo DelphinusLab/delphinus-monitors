@@ -43,10 +43,10 @@ async function handleDepositReq(
     cont = false;
     try {
       console.log("start to send to bsc");
-      await bridge2.bridge.methods
+      let tx = await bridge2.bridge.methods
         .verify(l2account, buffer, new BN("0"), new BN(rid))
         .send();
-      console.log("bsc done");
+      console.log("bsc done", tx);
     } catch (e) {
       if (e.message != "nonce too low") {
         console.log("failed on bsc");
@@ -62,9 +62,10 @@ async function handleDepositReq(
     cont = false;
     try {
       console.log("start to send to ropsten");
-      await bridge1.bridge.methods
+      let tx = await bridge1.bridge.methods
         .verify(l2account, buffer, new BN("0"), new BN(rid))
         .send();
+      console.log("ropsten done", tx);
     } catch (e) {
       if (e.message != "nonce too low") {
         console.log("failed on ropsten", e.message);
@@ -343,6 +344,8 @@ async function main() {
   const txList = Array.from(txMap.entries())
     .map((kv: any) => [new BN(kv[0].replace("0x", "")), kv[1]])
     .sort((kv1: any, kv2: any) => kv1[0] - kv2[0]);
+
+  console.log(txList.length);
 
   for (const kv of txList) {
     console.log(kv[1].value.toString());
