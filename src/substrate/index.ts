@@ -42,11 +42,14 @@ async function handleDepositReq(
   do {
     cont = false;
     try {
+      console.log("start to send to ropsten");
+      let tx = await bridge1.verify(l2account, buffer, new BN("0"), new BN(rid));
+      console.log("ropsten done", tx.blockHash);
+
       console.log("start to send to bsc");
-      let tx = await bridge2.bridge.methods
-        .verify(l2account, buffer, new BN("0"), new BN(rid))
-        .send();
-      console.log("bsc done", tx);
+      tx = await bridge2.verify(l2account, buffer, new BN("0"), new BN(rid));
+      console.log("bsc done", tx.blockHash);
+
     } catch (e) {
       if (e.message != "nonce too low") {
         console.log("failed on bsc");
@@ -58,13 +61,12 @@ async function handleDepositReq(
 
   console.log('tx1 done');
 
+/*
   do {
     cont = false;
     try {
       console.log("start to send to ropsten");
-      let tx = await bridge1.bridge.methods
-        .verify(l2account, buffer, new BN("0"), new BN(rid))
-        .send();
+      let tx = await bridge1.verify(l2account, buffer, new BN("0"), new BN(rid));
       console.log("ropsten done", tx);
     } catch (e) {
       if (e.message != "nonce too low") {
@@ -74,6 +76,7 @@ async function handleDepositReq(
       }
     }
   } while (cont);
+*/
 
   console.log(`Finish verify`);
 }
@@ -330,11 +333,11 @@ async function main() {
   const queue = new TransactionQueue(client);
 
   console.log("start");
-  bridge1 = await abi.getBridge(ETHConfig['localtestnet1'], false);
-  bridge2 = await abi.getBridge(ETHConfig['localtestnet2'], false);
+  //bridge1 = await abi.getBridge(ETHConfig['localtestnet1'], false);
+  //bridge2 = await abi.getBridge(ETHConfig['localtestnet2'], false);
 
-  //bridge1 = await abi.getBridge(ETHConfig['ropsten'], false);
-  //bridge2 = await abi.getBridge(ETHConfig['bsctestnet'], false);
+  bridge1 = await abi.getBridge(ETHConfig['ropsten'], false);
+  bridge2 = await abi.getBridge(ETHConfig['bsctestnet'], false);
   console.log("getBridge");
 
   await client.init();
