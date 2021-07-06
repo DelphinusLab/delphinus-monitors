@@ -23,20 +23,20 @@ let queue = new event_queue.EventQueue(async (id) => {
 });
 
 let handlers = {
-  Deposit: v => {
+  Deposit: async (v) => {
     console.log("Deposit token_addr:", to_hex_str(v.l1token));
     let l2account = l2address.bn_to_ss58(v.l2account);
     console.log("To l2 account:", l2account, " with amount: ", v.amount);
     console.log("Final balance:", v.balance, to_hex_str(v.l2account));
-    client.deposit(l2account, v.l1token, v.amount);
+    await client.deposit(l2account, v.l1token, v.amount);
   },
   WithDraw: v => {
     console.log("WithDraw", v.l1account, v.l2account, v.amount, v.balance);
   },
-  SwapAck: v => {
+  SwapAck: async (v) => {
     console.log("Transfer", v.l2account, v.rid);
     let l2account = l2address.bn_to_ss58(v.l2account);
-    queue.push(v.rid);
+    await client.ack(v.rid);
   }
 }
 

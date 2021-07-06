@@ -32,7 +32,7 @@ export class SubstrateClient {
     if (!this.sudo) {
       await cryptoWaitReady();
       const keyring = new Keyring({ type: 'sr25519' });
-      this.sudo = this.idx === 15
+      this.sudo = this.idx === 97
         ? keyring.addFromUri('//Alice', { name: 'Alice default' })
         : keyring.addFromUri('//Alice//stash', { name: 'Alice stash' });
       console.log("sudo is " + this.sudo.address);
@@ -54,12 +54,14 @@ export class SubstrateClient {
     const sudo = await this.getSudo();
     const tx = api.tx.swapModule[method](...args);
 
-    //if (this.nonce === undefined) {
+    if (this.nonce === undefined) {
       this.nonce = new BN((await api.query.system.account((sudo as any).address)).nonce);
-    //}
+    }
 
     const nonce = this.nonce;
     this.nonce = nonce.addn(1);
+
+    console.log("current nonce in send:", nonce);
     await tx.signAndSend(sudo, { nonce });
   }
 

@@ -17,6 +17,26 @@ function dataToBN(data: any) {
   return new BN(data.toHex().replace(/0x/, ""), 16);
 }
 
+async function try_verify(bridge:any, l2acc:string, buffer:BN[], b:BN, rid:BN) {
+   console.log("start to send to:", bridge.chain_hex_id);
+   while (true) {
+     try {
+       let tx = await bridge.verify(l2acc, buffer, b, rid);
+       console.log("done", tx.blockHash);
+       return tx;
+     } catch (e) {
+       if (e.message == "ESOCKETTIMEDOUT") {
+         await new Promise((resolve) => setTimeout(resolve, 5000));
+       } else if (e.message == "nonce too low") {
+         console.log("failed on bsc", e.message); // not sure
+         return;
+       } else {
+         throw e;
+       }
+     }
+  }
+}
+
 async function handleDepositReq(
   client: SubstrateClient,
   rid: string,
@@ -37,47 +57,8 @@ async function handleDepositReq(
   buffer.forEach((v) => console.log("0x" + v.toString(16, 32)));
   console.log("++++++++++++++");
 
-  let cont = false;
-
-  do {
-    cont = false;
-    try {
-      console.log("start to send to ropsten");
-      let tx = await bridge1.verify(l2account, buffer, new BN("0"), new BN(rid));
-      console.log("ropsten done", tx.blockHash);
-
-      console.log("start to send to bsc");
-      tx = await bridge2.verify(l2account, buffer, new BN("0"), new BN(rid));
-      console.log("bsc done", tx.blockHash);
-
-    } catch (e) {
-      if (e.message != "nonce too low") {
-        console.log("failed on bsc");
-        cont = true;
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-      }
-    }
-  } while (cont);
-
-  console.log('tx1 done');
-
-/*
-  do {
-    cont = false;
-    try {
-      console.log("start to send to ropsten");
-      let tx = await bridge1.verify(l2account, buffer, new BN("0"), new BN(rid));
-      console.log("ropsten done", tx);
-    } catch (e) {
-      if (e.message != "nonce too low") {
-        console.log("failed on ropsten", e.message);
-        cont = true;
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-      }
-    }
-  } while (cont);
-*/
-
+  await try_verify(bridge1, l2account, buffer, new BN("0"), new BN(rid));
+  await try_verify(bridge2, l2account, buffer, new BN("0"), new BN(rid));
   console.log(`Finish verify`);
 }
 
