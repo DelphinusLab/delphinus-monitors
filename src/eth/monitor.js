@@ -42,9 +42,9 @@ let handlers = {
 
 const BridgeJSON = require(config.contracts + "/Bridge.json");
 
-let etracker = new EthSubscriber.EventTracker(config.device_id, BridgeJSON, config, (n,v) => {
-    handlers[n](v);
-  });
+let etracker = new EthSubscriber.EventTracker(config.device_id, BridgeJSON, config, async (n,v) => {
+  await handlers[n](v);
+});
 
 etracker.subscribe_events().then(v => {
   console.log("start subscribe events:");
