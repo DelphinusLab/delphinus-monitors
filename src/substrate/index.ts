@@ -124,12 +124,15 @@ async function handleWithdrawReq(
 async function handleSwapReq(
   client: SubstrateClient,
   rid: string,
-  account?: string,
-  from?: BN,
-  to?: BN,
-  from_amount?: BN,
-  to_amount?: BN,
-  nonce?: BN
+  account: string,
+  from: BN,
+  to: BN,
+  amount: BN,
+  nonce: BN,
+  pool_amount_from: BN,
+  pool_amount_to: BN,
+  account_amount_from: BN,
+  account_amount_to: BN
 ) {
   let l2account = l2address.ss58_to_bn(account);
   let tx = await bridge1.bridge.methods.verify(l2account, [], "0", rid).send();
@@ -139,12 +142,17 @@ async function handleSwapReq(
 async function handlePoolSupplyReq(
   client: SubstrateClient,
   rid: string,
-  account?: string,
-  from?: BN,
-  to?: BN,
-  from_amount?: BN,
-  to_amount?: BN,
-  nonce?: BN
+  account: string,
+  from: BN,
+  to: BN,
+  amount_from: BN,
+  amount_to: BN,
+  nonce: BN,
+  pool_amount_from: BN,
+  pool_amount_to: BN,
+  account_amount_from: BN,
+  account_amount_to: BN,
+  share: BN
 ) {
   let l2account = l2address.ss58_to_bn(account);
   let tx = await bridge1.bridge.methods.verify(l2account, [], "0", rid).send();
@@ -154,12 +162,17 @@ async function handlePoolSupplyReq(
 async function handlePoolRetrieveReq(
   client: SubstrateClient,
   rid: string,
-  account?: string,
-  from?: BN,
-  to?: BN,
-  from_amount?: BN,
-  to_amount?: BN,
-  nonce?: BN
+  account: string,
+  from: BN,
+  to: BN,
+  amount_from: BN,
+  amount_to: BN,
+  nonce: BN,
+  pool_amount_from: BN,
+  pool_amount_to: BN,
+  account_amount_from: BN,
+  account_amount_to: BN,
+  share: BN
 ) {
   let l2account = l2address.ss58_to_bn(account);
   let tx = await bridge1.bridge.methods.verify(l2account, [], "0", rid).send();
@@ -203,60 +216,6 @@ class TransactionQueue {
         );
         break;
       }
-      case "SwapReq": {
-        const id = dataToBN(data[0]);
-        const account = data[1].toString();
-        const from = dataToBN(data[2]);
-        const to = dataToBN(data[3]);
-        const from_amount = dataToBN(data[4]);
-        const to_amount = dataToBN(data[5]);
-        await handleSwapReq(
-          this.client,
-          id.toString(),
-          account,
-          from,
-          to,
-          from_amount,
-          to_amount
-        );
-        break;
-      }
-      case "PoolSupplyReq": {
-        const id = dataToBN(data[0]);
-        const account = data[1].toString();
-        const from = dataToBN(data[2]);
-        const to = dataToBN(data[3]);
-        const from_amount = dataToBN(data[4]);
-        const to_amount = dataToBN(data[5]);
-        await handlePoolSupplyReq(
-          this.client,
-          id.toString(),
-          account,
-          from,
-          to,
-          from_amount,
-          to_amount
-        );
-        break;
-      }
-      case "PoolRetrieveReq": {
-        const id = dataToBN(data[0]);
-        const account = data[1].toString();
-        const from = dataToBN(data[2]);
-        const to = dataToBN(data[3]);
-        const from_amount = dataToBN(data[4]);
-        const to_amount = dataToBN(data[5]);
-        await handlePoolRetrieveReq(
-          this.client,
-          id.toString(),
-          account,
-          from,
-          to,
-          from_amount,
-          to_amount
-        );
-        break;
-      }
       case "WithdrawReq": {
         const id = dataToBN(data[0]);
         const account = data[1].toString();
@@ -274,6 +233,98 @@ class TransactionQueue {
           amount,
           nonce,
           restAmount
+        );
+        break;
+      }
+      case "SwapReq": {
+        let cursor = 0;
+        const rid = dataToBN(data[cursor++]).toString();
+        const account = data[cursor++].toString();
+        const from = dataToBN(data[cursor++]);
+        const to = dataToBN(data[cursor++]);
+        const amount = dataToBN(data[cursor++]);
+        const nonce = dataToBN(data[cursor++]);
+        const pool_amount_from = dataToBN(data[cursor++]);
+        const pool_amount_to = dataToBN(data[cursor++]);
+        const account_amount_from = dataToBN(data[cursor++]);
+        const account_amount_to = dataToBN(data[cursor++]);
+
+        await handleSwapReq(
+          this.client,
+          rid,
+          account,
+          from,
+          to,
+          amount,
+          nonce,
+          pool_amount_from,
+          pool_amount_to,
+          account_amount_from,
+          account_amount_to
+        );
+        break;
+      }
+      case "PoolSupplyReq": {
+        let cursor = 0;
+        const rid = dataToBN(data[cursor++]).toString();
+        const account = data[cursor++].toString();
+        const from = dataToBN(data[cursor++]);
+        const to = dataToBN(data[cursor++]);
+        const amount_from = dataToBN(data[cursor++]);
+        const amount_to = dataToBN(data[cursor++]);
+        const nonce = dataToBN(data[cursor++]);
+        const pool_amount_from = dataToBN(data[cursor++]);
+        const pool_amount_to = dataToBN(data[cursor++]);
+        const account_amount_from = dataToBN(data[cursor++]);
+        const account_amount_to = dataToBN(data[cursor++]);
+        const share = dataToBN(data[cursor++]);
+
+        await handlePoolSupplyReq(
+          this.client,
+          rid,
+          account,
+          from,
+          to,
+          amount_from,
+          amount_to,
+          nonce,
+          pool_amount_from,
+          pool_amount_to,
+          account_amount_from,
+          account_amount_to,
+          share
+        );
+        break;
+      }
+      case "PoolRetrieveReq": {
+        let cursor = 0;
+        const rid = dataToBN(data[cursor++]).toString();
+        const account = data[cursor++].toString();
+        const from = dataToBN(data[cursor++]);
+        const to = dataToBN(data[cursor++]);
+        const amount_from = dataToBN(data[cursor++]);
+        const amount_to = dataToBN(data[cursor++]);
+        const nonce = dataToBN(data[cursor++]);
+        const pool_amount_from = dataToBN(data[cursor++]);
+        const pool_amount_to = dataToBN(data[cursor++]);
+        const account_amount_from = dataToBN(data[cursor++]);
+        const account_amount_to = dataToBN(data[cursor++]);
+        const share = dataToBN(data[cursor++]);
+
+        await handlePoolRetrieveReq(
+          this.client,
+          rid,
+          account,
+          from,
+          to,
+          amount_from,
+          amount_to,
+          nonce,
+          pool_amount_from,
+          pool_amount_to,
+          account_amount_from,
+          account_amount_to,
+          share
         );
         break;
       }
@@ -338,32 +389,47 @@ async function main() {
 
     if (kv[1].value.isSwap) {
       const asSwap = kv[1].value.asSwap;
-      const account = asSwap[0].toString();
-      const from = new BN(asSwap[1].toString());
-      const to = new BN(asSwap[2].toString());
-      const amount_from = new BN(asSwap[3].toString());
-      const amount_to = new BN(asSwap[4].toString());
-      const nonce = new BN(asSwap[5].toString());
+      let cursor = 0;
+      const account = asSwap[cursor++].toString();
+      const from = new BN(asSwap[cursor++].toString());
+      const to = new BN(asSwap[cursor++].toString());
+      const amount = new BN(asSwap[cursor++].toString());
+      const nonce = new BN(asSwap[cursor++].toString());
+      const pool_amount_from = new BN(asSwap[cursor++].toString());
+      const pool_amount_to = new BN(asSwap[cursor++].toString());
+      const account_amount_from = new BN(asSwap[cursor++].toString());
+      const account_amount_to = new BN(asSwap[cursor++].toString());
+
       await handleSwapReq(
         client,
         rid,
         account,
         from,
         to,
-        amount_from,
-        amount_to,
-        nonce
+        amount,
+        nonce,
+        pool_amount_from,
+        pool_amount_to,
+        account_amount_from,
+        account_amount_to
       );
     }
 
     if (kv[1].value.isPoolSupply) {
       const asPoolSupply = kv[1].value.asPoolSupply;
-      const account = asPoolSupply[0].toString();
-      const from = new BN(asPoolSupply[1].toString());
-      const to = new BN(asPoolSupply[2].toString());
-      const amount_from = new BN(asPoolSupply[3].toString());
-      const amount_to = new BN(asPoolSupply[4].toString());
-      const nonce = new BN(asPoolSupply[5].toString());
+      let cursor = 0;
+      const account = asPoolSupply[cursor++].toString();
+      const from = new BN(asPoolSupply[cursor++].toString());
+      const to = new BN(asPoolSupply[cursor++].toString());
+      const amount_from = new BN(asPoolSupply[cursor++].toString());
+      const amount_to = new BN(asPoolSupply[cursor++].toString());
+      const nonce = new BN(asPoolSupply[cursor++].toString());
+      const pool_amount_from = new BN(asPoolSupply[cursor++].toString());
+      const pool_amount_to = new BN(asPoolSupply[cursor++].toString());
+      const account_amount_from = new BN(asPoolSupply[cursor++].toString());
+      const account_amount_to = new BN(asPoolSupply[cursor++].toString());
+      const share = new BN(asPoolSupply[cursor++].toString());
+
       await handlePoolSupplyReq(
         client,
         rid,
@@ -372,18 +438,30 @@ async function main() {
         to,
         amount_from,
         amount_to,
-        nonce
+        nonce,
+        pool_amount_from,
+        pool_amount_to,
+        account_amount_from,
+        account_amount_to,
+        share
       );
     }
 
     if (kv[1].value.isPoolRetrieve) {
       const asPoolRetrieve = kv[1].value.asPoolRetrieve;
-      const account = asPoolRetrieve[0].toString();
-      const from = new BN(asPoolRetrieve[1].toString());
-      const to = new BN(asPoolRetrieve[2].toString());
-      const amount_from = new BN(asPoolRetrieve[3].toString());
-      const amount_to = new BN(asPoolRetrieve[4].toString());
-      const nonce = new BN(asPoolRetrieve[5].toString());
+      let cursor = 0;
+      const account = asPoolRetrieve[cursor++].toString();
+      const from = new BN(asPoolRetrieve[cursor++].toString());
+      const to = new BN(asPoolRetrieve[cursor++].toString());
+      const amount_from = new BN(asPoolRetrieve[cursor++].toString());
+      const amount_to = new BN(asPoolRetrieve[cursor++].toString());
+      const nonce = new BN(asPoolRetrieve[cursor++].toString());
+      const pool_amount_from = new BN(asPoolRetrieve[cursor++].toString());
+      const pool_amount_to = new BN(asPoolRetrieve[cursor++].toString());
+      const account_amount_from = new BN(asPoolRetrieve[cursor++].toString());
+      const account_amount_to = new BN(asPoolRetrieve[cursor++].toString());
+      const share = new BN(asPoolRetrieve[cursor++].toString());
+
       await handlePoolRetrieveReq(
         client,
         rid,
@@ -392,7 +470,12 @@ async function main() {
         to,
         amount_from,
         amount_to,
-        nonce
+        nonce,
+        pool_amount_from,
+        pool_amount_to,
+        account_amount_from,
+        account_amount_to,
+        share
       );
     }
 
