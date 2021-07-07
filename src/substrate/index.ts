@@ -17,23 +17,23 @@ function dataToBN(data: any) {
   return new BN(data.toHex().replace(/0x/, ""), 16);
 }
 
-async function try_verify(bridge:any, l2acc:string, buffer:BN[], b:BN, rid:BN) {
-   console.log("start to send to:", bridge.chain_hex_id);
-   while (true) {
-     try {
-       let tx = await bridge.verify(l2acc, buffer, b, rid);
-       console.log("done", tx.blockHash);
-       return tx;
-     } catch (e) {
-       if (e.message == "ESOCKETTIMEDOUT") {
-         await new Promise((resolve) => setTimeout(resolve, 5000));
-       } else if (e.message == "nonce too low") {
-         console.log("failed on bsc", e.message); // not sure
-         return;
-       } else {
-         throw e;
-       }
-     }
+async function try_verify(bridge: any, l2acc: string, buffer: BN[], b: BN, rid: BN) {
+  console.log("start to send to:", bridge.chain_hex_id);
+  while (true) {
+    try {
+      let tx = await bridge.verify(l2acc, buffer, b, rid);
+      console.log("done", tx.blockHash);
+      return tx;
+    } catch (e) {
+      if (e.message == "ESOCKETTIMEDOUT") {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      } else if (e.message == "nonce too low") {
+        console.log("failed on bsc", e.message); // not sure
+        return;
+      } else {
+        throw e;
+      }
+    }
   }
 }
 
