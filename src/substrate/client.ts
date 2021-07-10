@@ -32,7 +32,7 @@ export class SubstrateClient {
     if (!this.sudo) {
       await cryptoWaitReady();
       const keyring = new Keyring({ type: 'sr25519' });
-      this.sudo = this.idx === 97
+      this.sudo = this.idx === 15
         ? keyring.addFromUri('//Alice', { name: 'Alice default' })
         : keyring.addFromUri('//Alice//stash', { name: 'Alice stash' });
       console.log("sudo is " + this.sudo.address);
