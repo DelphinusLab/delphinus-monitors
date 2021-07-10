@@ -37,88 +37,97 @@ async function try_verify(bridge: any, l2acc: string, buffer: BN[], b: BN, rid: 
   }
 }
 
-async function handleDepositReq(
-  client: SubstrateClient,
+enum Verifier {
+  Withdraw = 0,
+  Deposit = 1,
+  PoolOps = 2
+}
+
+interface PoolOpsAmountInfo {
+  token0: BN;
+  token1: BN;
+  amount0: BN;
+  amount1: BN;
+  balance0: BN;
+  balance1: BN;
+}
+
+function sortPoolPair(
+  from: BN,
+  to: BN,
+  amount_from: BN,
+  amount_to: BN,
+  pool_amount_from: BN,
+  pool_amount_to: BN,
+  account_amount_from: BN,
+  account_amount_to: BN
+) {
+  if (from < to) {
+    return {
+      token0: from,
+      token1: to,
+      amount0: pool_amount_from,
+      amount1: pool_amount_to,
+      balance0: account_amount_from,
+      balance1: account_amount_to
+    }
+  }
+
+  return {
+    token1: from,
+    token0: to,
+    amount1: pool_amount_from,
+    amount0: pool_amount_to,
+    balance1: account_amount_from,
+    balance0: account_amount_to
+  }
+}
+
+async function handleReq(
+  opName: string,
   rid: string,
-  account?: string,
-  token?: BN,
-  amount?: BN,
-  nonce?: BN,
-  amountRest?: BN
+  account: string,
+  nonce: BN,
+  buffer: BN[]
 ) {
   let l2account = l2address.ss58_to_bn(account);
-  let buffer = [new BN(1).shln(31 * 8), l2account, token, amountRest, amount];
-  console.log(`Trigger handleDepositReq, request id ${rid}.`);
-  console.log(`Start verify`);
-  console.log("---------------");
-  buffer.forEach((v) => console.log(v.bitLength()));
-  console.log("---------------");
+  console.log(`Trigger ${opName}, request id ${rid}.`);
+  console.log("Start verify");
   console.log("++++++++++++++");
   buffer.forEach((v) => console.log("0x" + v.toString(16, 32)));
   console.log("++++++++++++++");
 
-  await try_verify(bridge1, l2account, buffer, new BN("0"), new BN(rid));
-  await try_verify(bridge2, l2account, buffer, new BN("0"), new BN(rid));
+  await try_verify(bridge1, l2account, buffer, nonce, new BN(rid));
+  await try_verify(bridge2, l2account, buffer, nonce, new BN(rid));
+
   console.log(`Finish verify`);
 }
 
 async function handleWithdrawReq(
-  client: SubstrateClient,
   rid: string,
   account: string,
   l1account: BN,
-  token?: BN,
-  amount?: BN,
-  nonce?: BN,
-  amountRest?: BN
+  token: BN,
+  amount: BN,
+  nonce: BN,
+  finalAmount: BN
 ) {
   let l2account = l2address.ss58_to_bn(account);
-  let buffer = [new BN(0), l2account, token, amountRest, l1account, amount];
-  console.log(`Trigger handleWithdrawReq, request id ${rid}.`);
-  console.log(`Start verify`);
-  console.log("---------------");
-  buffer.forEach((v) => console.log(v.bitLength()));
-  console.log("---------------");
-  console.log("++++++++++++++");
-  buffer.forEach((v) => console.log("0x" + v.toString(16, 32)));
-  console.log("++++++++++++++");
+  let buffer = [new BN(Verifier.Withdraw), l2account, token, finalAmount, l1account, amount];
+  return handleReq("handleWithdrawReq", rid, account, nonce, buffer);
+}
 
-  let cont = false;
-  do {
-    cont = false;
-    try {
-      console.log("start to send to ropsten");
-      await bridge1.bridge.methods
-        .verify(l2account, buffer, new BN("0"), new BN(rid))
-        .send();
-    } catch (e) {
-      if (e.message != "nonce too low") {
-        console.log("failed on ropsten");
-        cont = true;
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-      }
-    }
-  } while (cont)
-
-  console.log('tx1 done');
-
-  do {
-    cont = false;
-    try {
-      console.log("start to send to bsc");
-      await bridge2.bridge.methods
-        .verify(l2account, buffer, new BN("0"), new BN(rid))
-        .send();
-    } catch (e) {
-      if (e.message != "nonce too low") {
-        console.log("failed on bsc");
-        cont = true;
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-      }
-    }
-  } while (cont)
-
-  console.log(`Finish verify`);
+async function handleDepositReq(
+  rid: string,
+  account: string,
+  token: BN,
+  amount: BN,
+  nonce: BN,
+  finalAmount: BN
+) {
+  let l2account = l2address.ss58_to_bn(account);
+  let buffer = [new BN(Verifier.Deposit).shln(31 * 8), l2account, token, finalAmount, amount];
+  return handleReq("handleDepositReq", rid, account, nonce, buffer);
 }
 
 async function handleSwapReq(
@@ -134,13 +143,10 @@ async function handleSwapReq(
   account_amount_from: BN,
   account_amount_to: BN
 ) {
-  let l2account = l2address.ss58_to_bn(account);
-  let tx = await bridge1.bridge.methods.verify(l2account, [], "0", rid).send();
-  console.log(`Trigger handleSwapReq, request id ${rid}.`);
+  throw Error("not implemented yet");
 }
 
-async function handlePoolSupplyReq(
-  client: SubstrateClient,
+async function handlePoolOpsReq(
   rid: string,
   account: string,
   from: BN,
@@ -154,29 +160,25 @@ async function handlePoolSupplyReq(
   account_amount_to: BN,
   share: BN
 ) {
+  const amountInfo = sortPoolPair(
+    from, to,
+    amount_from, amount_to,
+    pool_amount_from, pool_amount_to,
+    account_amount_from, account_amount_to
+  );
   let l2account = l2address.ss58_to_bn(account);
-  let tx = await bridge1.bridge.methods.verify(l2account, [], "0", rid).send();
-  console.log(`Trigger handlePoolSupplyReq, request id ${rid}.`);
-}
-
-async function handlePoolRetrieveReq(
-  client: SubstrateClient,
-  rid: string,
-  account: string,
-  from: BN,
-  to: BN,
-  amount_from: BN,
-  amount_to: BN,
-  nonce: BN,
-  pool_amount_from: BN,
-  pool_amount_to: BN,
-  account_amount_from: BN,
-  account_amount_to: BN,
-  share: BN
-) {
-  let l2account = l2address.ss58_to_bn(account);
-  let tx = await bridge1.bridge.methods.verify(l2account, [], "0", rid).send();
-  console.log(`Trigger handlePoolRetrieveReq, request id ${rid}.`);
+  let buffer = [
+    new BN(Verifier.PoolOps),
+    l2account,
+    share,
+    amountInfo.token0,
+    amountInfo.token1,
+    amountInfo.amount0,
+    amountInfo.amount1,
+    amountInfo.balance0,
+    amountInfo.balance1
+  ]
+  return handleReq("handlePoolSupplyReq", rid, account, nonce, buffer);
 }
 
 class TransactionQueue {
@@ -206,7 +208,6 @@ class TransactionQueue {
         const nonce = dataToBN(data[4]);
         const restAmount = dataToBN(data[5]);
         await handleDepositReq(
-          this.client,
           id.toString(),
           account,
           token,
@@ -225,7 +226,6 @@ class TransactionQueue {
         const nonce = dataToBN(data[5]);
         const restAmount = dataToBN(data[6]);
         await handleWithdrawReq(
-          this.client,
           id.toString(),
           account,
           l1account,
@@ -279,8 +279,7 @@ class TransactionQueue {
         const account_amount_to = dataToBN(data[cursor++]);
         const share = dataToBN(data[cursor++]);
 
-        await handlePoolSupplyReq(
-          this.client,
+        await handlePoolOpsReq(
           rid,
           account,
           from,
@@ -311,8 +310,7 @@ class TransactionQueue {
         const account_amount_to = dataToBN(data[cursor++]);
         const share = dataToBN(data[cursor++]);
 
-        await handlePoolRetrieveReq(
-          this.client,
+        await handlePoolOpsReq(
           rid,
           account,
           from,
@@ -430,8 +428,7 @@ async function main() {
       const account_amount_to = new BN(asPoolSupply[cursor++].toString());
       const share = new BN(asPoolSupply[cursor++].toString());
 
-      await handlePoolSupplyReq(
-        client,
+      await handlePoolOpsReq(
         rid,
         account,
         from,
@@ -462,8 +459,7 @@ async function main() {
       const account_amount_to = new BN(asPoolRetrieve[cursor++].toString());
       const share = new BN(asPoolRetrieve[cursor++].toString());
 
-      await handlePoolRetrieveReq(
-        client,
+      await handlePoolOpsReq(
         rid,
         account,
         from,
@@ -488,7 +484,6 @@ async function main() {
       const nonce = new BN(asDeposit[4].toString());
       const amountRest = new BN(asDeposit[5].toString());
       await handleWithdrawReq(
-        client,
         rid,
         account,
         l1account,
@@ -507,7 +502,6 @@ async function main() {
       const nonce = new BN(asDeposit[3].toString());
       const amountRest = new BN(asDeposit[4].toString());
       await handleDepositReq(
-        client,
         rid,
         account,
         token,
