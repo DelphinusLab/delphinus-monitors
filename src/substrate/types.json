@@ -2,10 +2,10 @@
   "Ops": {
     "_enum": {
       "Deposit": "(AccountId, U256, U256, U256, U256)",
-      "Swap": "(AccountId, U256, U256, U256, U256, U256)",
-      "PoolSupply": "(AccountId, U256, U256, U256, U256, U256)",
-      "PoolRetrieve": "(AccountId, U256, U256, U256, U256, U256)",
-      "Withdraw": "(AccountId, U256, U256, U256, U256, U256)"
+      "Withdraw": "(AccountId, U256, U256, U256, U256, U256)",
+      "Swap": "(AccountId, U256, U256, U256, U256, U256, U256, U256, U256)",
+      "PoolSupply": "(AccountId, U256, U256, U256, U256, U256, U256, U256, U256, U256, U256)",
+      "PoolRetrieve": "(AccountId, U256, U256, U256, U256, U256, U256, U256, U256, U256, U256)"
     }
   },
   "TokenAddr": "U256",
