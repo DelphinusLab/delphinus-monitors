@@ -3,7 +3,6 @@ import substrateNode from "../../config/substrate-node.json";
 import { SubstrateClient } from "./client";
 import { EventQueue } from "./event-queue";
 import { handleDepositEvent, handleDepositPendingOps } from "./ops/deposit";
-import { sortPoolPair } from "./sort-pool-ops-info";
 import { handleWithdrawEvent, handleWithdrawPendingOps } from "./ops/withdraw";
 import { handleSwapEvent, handleSwapPendingOps } from "./ops/swap";
 import { L2Ops } from "./enums";
@@ -14,9 +13,9 @@ import {
 import { handlePoolRetrieveEvent } from "./ops/pool-retrieve";
 import { registerBridge } from "./bridges";
 
+const MonitorETHConfig: any = require("../../config/eth-config.json");
 const ETHConfig: any = require("solidity/clients/config");
 const abi: any = require("solidity/clients/bridge/abi");
-const l2address: any = require("../eth/l2address");
 
 let bridge1: any;
 let bridge2: any;
@@ -78,15 +77,18 @@ class TransactionQueue {
 
 async function main() {
   const client = new SubstrateClient(
-    `${substrateNode.host}:${substrateNode.port}`,
-    15
+    `${substrateNode.host}:${substrateNode.port}`
   );
   const queue = new TransactionQueue(client);
 
   console.log("start");
 
-  registerBridge("localtestnet1", await abi.getBridge(ETHConfig["localtestnet1"], false));
-  registerBridge("localtestnet2", await abi.getBridge(ETHConfig["localtestnet2"], false));
+  for (let config of MonitorETHConfig.filter((config: any) => config.enable)) {
+    registerBridge(
+      config.name,
+      await abi.getBridge(ETHConfig[config.name], false)
+    );
+  }
 
   console.log("getBridge");
 
