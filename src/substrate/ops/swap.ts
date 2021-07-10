@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { dataToBN, handleReq } from "./common";
-const l2address: any = require("../eth/l2address");
+const l2address: any = require("../../eth/l2address");
 
 async function handleSwapReq(
   rid: string,

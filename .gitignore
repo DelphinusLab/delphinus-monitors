@@ -1,2 +1,3 @@
 src/substrate/**/*.js
 src/substrate/**/*.js.map
+node_modules

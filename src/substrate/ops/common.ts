@@ -2,8 +2,7 @@ import BN from "bn.js";
 import { bridgeInfos } from "../bridges";
 import { Verifier } from "../enums";
 import { sortPoolPair } from "../sort-pool-ops-info";
-
-const l2address: any = require("../eth/l2address");
+const l2address: any = require("../../eth/l2address");
 
 async function tryVerify(
   bridge: any,
