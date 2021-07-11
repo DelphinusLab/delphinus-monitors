@@ -76,7 +76,7 @@ export async function handlePoolOpsReq(
     );
     let l2account = l2address.ss58_to_bn(account);
     let buffer = [
-      new BN(Verifier.PoolOps),
+      new BN(Verifier.PoolOps).shln(31 * 8),,
       l2account,
       share,
       amountInfo.token0,
@@ -86,6 +86,6 @@ export async function handlePoolOpsReq(
       amountInfo.balance0,
       amountInfo.balance1
     ]
-    return handleReq("handlePoolSupplyReq", rid, account, nonce, buffer);
+    return handleReq("handlePoolOpsReq", rid, account, nonce, buffer);
   }
   

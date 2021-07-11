@@ -14,7 +14,7 @@ async function handleWithdrawReq(
 ) {
   let l2account = l2address.ss58_to_bn(account);
   let buffer = [
-    new BN(Verifier.Withdraw),
+    new BN(Verifier.Withdraw).shln(31 * 8),,
     l2account,
     token,
     finalAmount,
