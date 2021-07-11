@@ -1,4 +1,6 @@
 import BN from "bn.js";
+import { Verifier } from "../enums";
+import { sortPoolPair } from "../sort-pool-ops-info";
 import { dataToBN, handleReq } from "./common";
 const l2address: any = require("../../eth/l2address");
 
@@ -14,7 +16,23 @@ async function handleSwapReq(
   account_amount_from: BN,
   account_amount_to: BN
 ) {
-  throw Error("not implemented yet");
+  const amountInfo = sortPoolPair(
+    from, to,
+    pool_amount_from, pool_amount_to,
+    account_amount_from, account_amount_to
+  );
+  let l2account = l2address.ss58_to_bn(account);
+  let buffer = [
+    new BN(Verifier.Swap).shln(31 * 8),
+    l2account,
+    amountInfo.token0,
+    amountInfo.token1,
+    amountInfo.amount0,
+    amountInfo.amount1,
+    amountInfo.balance0,
+    amountInfo.balance1
+  ]
+  return handleReq("handleSwapReq", rid, account, nonce, buffer);
 }
 
 export async function handleSwapPendingOps(rid: string, asSwap: any[]) {
