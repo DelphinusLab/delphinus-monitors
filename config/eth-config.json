@@ -9,7 +9,7 @@
       "chainId": 16,
       "chainName": "localtestnet2",
       "enable": true,
-      "L2account": "//Alice/stash"
+      "L2account": "//Alice//stash"
     },
     {
       "chainId": 3,
@@ -21,6 +21,6 @@
       "chainId": 97,
       "chainName": "bsctestnet",
       "enable": false,
-      "L2account": "//Alice"
+      "L2account": "//Alice//stash"
     }
 ]

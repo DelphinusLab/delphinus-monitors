@@ -86,7 +86,7 @@ async function main() {
   for (let config of MonitorETHConfig.filter((config: any) => config.enable)) {
     registerBridge(
       config.name,
-      await abi.getBridge(ETHConfig[config.name], false)
+      await abi.getBridge(ETHConfig[config.chainName], false)
     );
   }
 

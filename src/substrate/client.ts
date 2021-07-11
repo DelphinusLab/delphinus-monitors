@@ -38,7 +38,7 @@ export class SubstrateClient {
       await cryptoWaitReady();
       const keyring = new Keyring({ type: "sr25519" });
       this.sudo = keyring.addFromUri(
-        MonitorETHConfig.fitler((config: any) => config.chainId === this.idx)[0]
+        MonitorETHConfig.filter((config: any) => config.chainId === this.idx)[0]
           ?.L2account || "//Bob"
       );
       console.log("sudo is " + this.sudo.address);
