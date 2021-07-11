@@ -10,7 +10,7 @@ import {
   handlePoolSupplyEvent,
   handlePoolSupplyPendingOps,
 } from "./ops/pool-supply";
-import { handlePoolRetrieveEvent } from "./ops/pool-retrieve";
+import { handlePoolRetrieveEvent, handlePoolRetrievePendingOps } from "./ops/pool-retrieve";
 import { registerBridge } from "./bridges";
 
 const MonitorETHConfig: any = require("../../config/eth-config.json");
@@ -116,7 +116,7 @@ async function main() {
     } else if (kv[1].value.isPoolSupply) {
       await handlePoolSupplyPendingOps(rid, kv[1].value.asPoolSupply);
     } else if (kv[1].value.isPoolRetrieve) {
-      await handlePoolSupplyPendingOps(rid, kv[1].value.asPoolRetrieve);
+      await handlePoolRetrievePendingOps(rid, kv[1].value.asPoolRetrieve);
     }
   }
 

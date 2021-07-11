@@ -10,5 +10,5 @@ export enum L2Ops {
     Deposit = "Deposit",
     Swap = "SwapReq",
     PoolSupply = "PoolSupplyReq",
-    PoolRetrieve = "PoolRetrieve",
+    PoolRetrieve = "PoolRetrieveReq",
 }
