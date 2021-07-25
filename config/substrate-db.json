@@ -1,0 +1,7 @@
+{
+    "hostname": "localhost",
+    "port":     "27017",
+    "username": "genfengdog",
+    "password": "genfengdog",
+    "database": "substrate"
+}
