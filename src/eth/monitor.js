@@ -4,12 +4,19 @@ const EthSubscriber = require("web3subscriber/syncdb");
 const EthConfig = require('solidity/clients/config.js');
 const substrateNode = require('../../config/substrate-node.json');
 const substrateClient = require('../substrate/client');
+const bridge = require('solidity/clients/bridge/bridge.js');
 const l2address = require('./l2address');
 const BigNumber = Web3.utils.BN;
 const event_queue = require('../substrate/event-queue');
+const RioTokenInfo = require("solidity/build/contracts/Rio.json");
 
 let config = EthConfig[process.argv[2]];
 console.log("config:", config);
+
+let charge_address = RioTokenInfo.networks[config.device_id].address;
+let encoded_charge_address = "0x" + bridge.encodeL1Address(charge_address.substring(2), config.device_id).toString(16);
+
+console.log("encoded charge address is", encoded_charge_address);
 
 const client = new substrateClient.SubstrateClient(`${substrateNode.host}:${substrateNode.port}`, parseInt(config.device_id));
 
@@ -22,13 +29,27 @@ let queue = new event_queue.EventQueue(async (id) => {
   await client.ack(id);
 });
 
+async function handle_deposit(v) {
+  console.log("Deposit token_addr:", to_hex_str(v.l1token));
+  let l2account = l2address.bn_to_ss58(v.l2account);
+  console.log("To l2 account:", l2account, " with amount: ", v.amount);
+  console.log("Final balance:", v.balance, to_hex_str(v.l2account));
+  await client.deposit(l2account, v.l1token, v.amount);
+}
+
+async function handle_charge(v) {
+  console.log("Charge token_addr:", to_hex_str(v.l1token));
+  let l2account = l2address.bn_to_ss58(v.l2account);
+  await client.charge(l2account, v.amount);
+}
+
 let handlers = {
   Deposit: async (v) => {
-    console.log("Deposit token_addr:", to_hex_str(v.l1token));
-    let l2account = l2address.bn_to_ss58(v.l2account);
-    console.log("To l2 account:", l2account, " with amount: ", v.amount);
-    console.log("Final balance:", v.balance, to_hex_str(v.l2account));
-    await client.deposit(l2account, v.l1token, v.amount);
+    if (to_hex_str(v.l1token) == encoded_charge_address) {
+      await handle_charge(v);
+    } else {
+      await handle_deposit(v);
+    }
   },
   WithDraw: v => {
     console.log("WithDraw", v.l1account, v.l2account, v.amount, v.balance);

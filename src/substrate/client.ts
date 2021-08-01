@@ -95,6 +95,21 @@ export class SubstrateClient {
     );
   }
 
+  public async charge(
+    account: string,
+    amount: string = "0"
+  ) {
+    const api = await this.getAPI();
+    const sudo = await this.getSudo();
+    const accountId = ss58.addressToAddressId((sudo as any).address);
+    return this.send(
+      "charge",
+      account,
+      new BN(amount),
+    );
+  }
+
+
   public async getPendingReqMap() {
     const api = await this.getAPI();
     const rawMap = await api.query.swapModule.pendingReqMap.entriesAt(

@@ -2,25 +2,25 @@
     {
       "chainId": 15,
       "chainName": "localtestnet1",
-      "enable": true,
+      "enable": false,
       "L2account": "//Alice"
     },
     {
       "chainId": 16,
       "chainName": "localtestnet2",
-      "enable": true,
+      "enable": false,
       "L2account": "//Alice//stash"
     },
     {
       "chainId": 3,
       "chainName": "ropsten",
-      "enable": false,
+      "enable": true,
       "L2account": "//Alice"
     },
     {
       "chainId": 97,
       "chainName": "bsctestnet",
-      "enable": false,
+      "enable": true,
       "L2account": "//Alice//stash"
     }
 ]

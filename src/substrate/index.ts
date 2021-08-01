@@ -81,8 +81,6 @@ async function main() {
   );
   const queue = new TransactionQueue(client);
 
-  console.log("start");
-
   for (let config of MonitorETHConfig.filter((config: any) => config.enable)) {
     registerBridge(
       config.name,
