@@ -9,6 +9,12 @@ import { cryptoWaitReady } from "@polkadot/util-crypto";
 const ss58 = require("substrate-ss58");
 const MonitorETHConfig = require("../../config/eth-config.json");
 
+const hexstr2bn = (hexstr:string) => {
+  console.assert(hexstr.substring(0,2) == "0x");
+  let r = new BN(hexstr.substring(2), 'hex');
+  return r;
+}
+
 export class SubstrateClient {
   provider: WsProvider;
   api?: ApiPromise;
@@ -80,7 +86,8 @@ export class SubstrateClient {
   public async deposit(
     account: string,
     token_addr: string = "0",
-    amount: string = "0"
+    amount: string = "0",
+    hash: string = "0x0"
   ) {
     const api = await this.getAPI();
     const sudo = await this.getSudo();
@@ -91,7 +98,8 @@ export class SubstrateClient {
       account,
       new BN(token_addr),
       new BN(amount),
-      l2nonce
+      l2nonce,
+      hexstr2bn(hash)
     );
   }
 

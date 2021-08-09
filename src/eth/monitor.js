@@ -29,12 +29,12 @@ let queue = new event_queue.EventQueue(async (id) => {
   await client.ack(id);
 });
 
-async function handle_deposit(v) {
+async function handle_deposit(v, hash_str) {
   console.log("Deposit token_addr:", to_hex_str(v.l1token));
   let l2account = l2address.bn_to_ss58(v.l2account);
   console.log("To l2 account:", l2account, " with amount: ", v.amount);
   console.log("Final balance:", v.balance, to_hex_str(v.l2account));
-  await client.deposit(l2account, v.l1token, v.amount);
+  await client.deposit(l2account, v.l1token, v.amount, hash_str);
 }
 
 async function handle_charge(v) {
@@ -44,17 +44,17 @@ async function handle_charge(v) {
 }
 
 let handlers = {
-  Deposit: async (v) => {
+  Deposit: async (v, hash) => {
     if (to_hex_str(v.l1token) == encoded_charge_address) {
       await handle_charge(v);
     } else {
-      await handle_deposit(v);
+      await handle_deposit(v, hash);
     }
   },
-  WithDraw: v => {
+  WithDraw: (v, hash) => {
     console.log("WithDraw", v.l1account, v.l2account, v.amount, v.balance);
   },
-  SwapAck: async (v) => {
+  SwapAck: async (v, hash) => {
     console.log("Transfer", v.l2account, v.rid);
     let l2account = l2address.bn_to_ss58(v.l2account);
     await client.ack(v.rid);
@@ -63,8 +63,8 @@ let handlers = {
 
 const BridgeJSON = require(config.contracts + "/Bridge.json");
 
-let etracker = new EthSubscriber.EventTracker(config.device_id, BridgeJSON, config, async (n,v) => {
-  await handlers[n](v);
+let etracker = new EthSubscriber.EventTracker(config.device_id, BridgeJSON, config, async (n,v,hash) => {
+  await handlers[n](v, hash);
 });
 
 etracker.subscribe_events().then(v => {
