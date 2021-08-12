@@ -14,9 +14,13 @@ async function tryVerify(
   console.log("start to send to:", bridge.chain_hex_id);
   while (true) {
     try {
-      let tx = await bridge.verify(l2acc, buffer, b, rid);
-      console.log("done", tx.blockHash);
-      return tx;
+      let tx = bridge.verify(l2acc, buffer, b, rid);
+      let r = await tx.when("Verify","transactionHash", (hash:string)=> {
+        console.log(hash);
+        //FIXME: setT
+      );
+      console.log("done", r.blockHash);
+      return r;
     } catch (e) {
       if (e.message == "ESOCKETTIMEDOUT") {
         await new Promise((resolve) => setTimeout(resolve, 5000));
