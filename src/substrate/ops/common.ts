@@ -18,7 +18,7 @@ async function tryVerify(
       let r = await tx.when("Verify","transactionHash", (hash:string)=> {
         console.log(hash);
         //FIXME: setT
-      );
+      });
       console.log("done", r.blockHash);
       return r;
     } catch (e) {
