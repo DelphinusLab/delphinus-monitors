@@ -13,22 +13,29 @@ async function tryVerify(
 ) {
   console.log("start to send to:", bridge.chain_hex_id);
   while (true) {
+    let txhash = "";
     try {
       let tx = bridge.verify(l2acc, buffer, b, rid);
-      let r = await tx.when("Verify","transactionHash", (hash:string)=> {
-        console.log(hash);
-        //FIXME: setT
+      let r = await tx.when("Verify","transactionHash", (hash:string) => {
+        console.log("Get transactionHash", hash);
+        txhash = hash;
       });
       console.log("done", r.blockHash);
       return r;
     } catch (e) {
-      if (e.message == "ESOCKETTIMEDOUT") {
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-      } else if (e.message == "nonce too low") {
-        console.log("failed on bsc", e.message); // not sure
-        return;
+      if (txhash !== "") {
+        console.log("exception with transactionHash ready", " will retry ...");
+        throw(e);
       } else {
-        throw e;
+        if (e.message == "ESOCKETTIMEDOUT") {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        } else if (e.message == "nonce too low") {
+          console.log("failed on:", bridge.chain_hex_id, e.message); // not sure
+          return;
+        } else {
+          console.log("Unhandled exception during verify");
+          throw e;
+        }
       }
     }
   }
