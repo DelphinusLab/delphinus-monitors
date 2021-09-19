@@ -12,15 +12,50 @@ import {
 } from "./ops/pool-supply";
 import { handlePoolRetrieveEvent, handlePoolRetrievePendingOps } from "./ops/pool-retrieve";
 import { registerBridge } from "./bridges";
+import { L2Storage } from "delphinus-zkp/src/business/command";
+import { handleAddTokenEvent, handleAddTokenPendingOps } from "./ops/add-token";
 
 const MonitorETHConfig: any = require("../../config/eth-config.json");
 const ETHConfig: any = require("solidity/clients/config");
 const abi: any = require("solidity/clients/bridge/abi");
 
-let bridge1: any;
-let bridge2: any;
-
 const SECTION_NAME = "swapModule";
+
+async function loadL2Storage() {
+  return new L2Storage;
+}
+
+const opsMap = new Map<L2Ops, (data: any[], storage: L2Storage) => Promise<void>>([
+  [L2Ops.Deposit, handleDepositEvent],
+  [L2Ops.Withdraw, handleWithdrawEvent],
+  [L2Ops.Swap, handleSwapEvent],
+  [L2Ops.PoolSupply, handlePoolSupplyEvent],
+  [L2Ops.PoolRetrieve, handlePoolRetrieveEvent],
+  [L2Ops.AddPool, handlePoolRetrieveEvent],
+  [L2Ops.AddToken, handleAddTokenEvent],
+]);
+
+async function handlePendingReq(kv: any[], storage: L2Storage) {
+  console.log(kv[1].value.toString());
+  const rid = kv[0].toString();
+  console.log(`rid is ${rid}`);
+
+  if (kv[1].value.isWithdraw) {
+    await handleWithdrawPendingOps(rid, kv[1].value.asWithdraw);
+  } else if (kv[1].value.isDeposit) {
+    await handleDepositPendingOps(rid, kv[1].value.asDeposit);
+  } else if (kv[1].value.isSwap) {
+    await handleSwapPendingOps(rid, kv[1].value.asSwap);
+  } else if (kv[1].value.isPoolSupply) {
+    await handlePoolSupplyPendingOps(rid, kv[1].value.asPoolSupply);
+  } else if (kv[1].value.isPoolRetrieve) {
+    await handlePoolRetrievePendingOps(rid, kv[1].value.asPoolRetrieve);
+  } else if (kv[1].value.isAddToken) {
+    await handleAddTokenPendingOps(rid, kv[1].value.asAddToken, storage);
+  }  else {
+    console.log(kv[1].value);
+  }
+}
 
 class TransactionQueue {
   client: SubstrateClient;
@@ -28,11 +63,13 @@ class TransactionQueue {
   startHeader: any;
   blockQueue: EventQueue<any>;
   eventQueue: EventQueue<[string, any]>;
+  storage: L2Storage;
 
-  constructor(_client: SubstrateClient) {
+  constructor(_client: SubstrateClient, storage: L2Storage) {
     this.client = _client;
     this.blockQueue = new EventQueue(this._handleBlock.bind(this));
     this.eventQueue = new EventQueue(this._handleEvent.bind(this));
+    this.storage = storage;
   }
 
   private async _handleEvent(info: [string, any]) {
@@ -41,15 +78,7 @@ class TransactionQueue {
     const data = info[1];
 
     if (Object.values(L2Ops).find((op) => op === method)) {
-      const opsMap = new Map<L2Ops, (data: any[]) => Promise<void>>([
-        [L2Ops.Deposit, handleDepositEvent],
-        [L2Ops.Withdraw, handleWithdrawEvent],
-        [L2Ops.Swap, handleSwapEvent],
-        [L2Ops.PoolSupply, handlePoolSupplyEvent],
-        [L2Ops.PoolRetrieve, handlePoolRetrieveEvent],
-      ]);
-
-      await opsMap.get(method as L2Ops)?.(data);
+      await opsMap.get(method as L2Ops)?.(data, this.storage);
     }
   }
 
@@ -77,15 +106,17 @@ class TransactionQueue {
 
 async function main() {
   const client = new SubstrateClient(
-    `${substrateNode.host}:${substrateNode.port}`
+    `${substrateNode["host-local"]}:${substrateNode.port}`
   );
-  const queue = new TransactionQueue(client);
+
+  const storage = await loadL2Storage();
+  const queue = new TransactionQueue(client, storage);
 
   for (let config of MonitorETHConfig.filter((config: any) => config.enable)) {
-    registerBridge(
-      config.name,
-      await abi.getBridge(ETHConfig[config.chainName], false)
-    );
+    //registerBridge(
+    //  config.name,
+    //  await abi.getBridge(ETHConfig[config.chainName], false)
+    //);
   }
 
   console.log("getBridge");
@@ -101,21 +132,7 @@ async function main() {
   console.log(txList.length);
 
   for (const kv of txList) {
-    console.log(kv[1].value.toString());
-    const rid = kv[0].toString();
-    console.log(`rid is ${rid}`);
-
-    if (kv[1].value.isWithdraw) {
-      await handleWithdrawPendingOps(rid, kv[1].value.asWithdraw);
-    } else if (kv[1].value.isDeposit) {
-      await handleDepositPendingOps(rid, kv[1].value.asDeposit);
-    } else if (kv[1].value.isSwap) {
-      await handleSwapPendingOps(rid, kv[1].value.asSwap);
-    } else if (kv[1].value.isPoolSupply) {
-      await handlePoolSupplyPendingOps(rid, kv[1].value.asPoolSupply);
-    } else if (kv[1].value.isPoolRetrieve) {
-      await handlePoolRetrievePendingOps(rid, kv[1].value.asPoolRetrieve);
-    }
+    await handlePendingReq(kv, storage);
   }
 
   queue.setStartHeader(client.lastHeader);

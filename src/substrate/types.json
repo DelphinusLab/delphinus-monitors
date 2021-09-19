@@ -6,6 +6,8 @@
       "Swap": "(AccountId, U256, U256, U256, U256, U256, U256, U256, U256)",
       "PoolSupply": "(AccountId, U256, U256, U256, U256, U256, U256, U256, U256, U256, U256)",
       "PoolRetrieve": "(AccountId, U256, U256, U256, U256, U256, U256, U256, U256, U256, U256)",
+      "AddToken": "(TokenAddr, TokenIndex)",
+      "AddPool": "(TokenIndex, TokenIndex, PoolIndex)",
       "Charge": "(AccountId, U128)"
     }
   },
@@ -14,5 +16,8 @@
   "NonceId": "U256",
   "ReqId": "U256",
   "L1Account": "U256",
-  "L1TxHash": "U256"
+  "L1TxHash": "U256",
+  "TokenIndex": "u32",
+  "PoolIndex": "u32",
+  "AccountIndex": "u32"
 }

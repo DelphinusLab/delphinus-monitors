@@ -6,6 +6,8 @@ export enum Verifier {
 }
 
 export enum L2Ops {
+    AddPool = "AddPoolReq",
+    AddToken = "AddTokenReq",
     Withdraw = "WithdrawReq",
     Deposit = "Deposit",
     Swap = "SwapReq",

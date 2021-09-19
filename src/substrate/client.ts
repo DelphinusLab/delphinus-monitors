@@ -44,8 +44,7 @@ export class SubstrateClient {
       await cryptoWaitReady();
       const keyring = new Keyring({ type: "sr25519" });
       this.sudo = keyring.addFromUri(
-        MonitorETHConfig.filter((config: any) => config.chainId === this.idx)[0]
-          ?.L2account || "//Bob"
+        MonitorETHConfig.filter((config: any) => config.chainId === this.idx)[0]?.L2account!
       );
       console.log("sudo is " + this.sudo.address);
       console.log("sudo Id is " + ss58.addressToAddressId(this.sudo.address));
@@ -62,13 +61,15 @@ export class SubstrateClient {
   }
 
   public async send(method: string, ...args: any[]) {
+    console.log("send "+ method);
+
     const api = await this.getAPI();
     const sudo = await this.getSudo();
     const tx = api.tx.swapModule[method](...args);
 
     if (this.nonce === undefined) {
       this.nonce = new BN(
-        (await api.query.system.account((sudo as any).address)).nonce
+        (await api.query.system.account((sudo as any).address)).nonce.toNumber()
       );
     }
 
@@ -138,5 +139,10 @@ export class SubstrateClient {
     await api.rpc.chain.subscribeNewHeads((header) => {
       cb(header);
     });
+  }
+
+  public async close() {
+    const api = await this.getAPI();
+    await api.disconnect();
   }
 }
