@@ -14,6 +14,7 @@ import { handlePoolRetrieveEvent, handlePoolRetrievePendingOps } from "./ops/poo
 import { registerBridge } from "./bridges";
 import { L2Storage } from "delphinus-zkp/src/business/command";
 import { handleAddTokenEvent, handleAddTokenPendingOps } from "./ops/add-token";
+import { handleAddPoolEvent } from "./ops/add-pool";
 
 const MonitorETHConfig: any = require("../../config/eth-config.json");
 const ETHConfig: any = require("solidity/clients/config");
@@ -31,7 +32,7 @@ const opsMap = new Map<L2Ops, (data: any[], storage: L2Storage) => Promise<void>
   [L2Ops.Swap, handleSwapEvent],
   [L2Ops.PoolSupply, handlePoolSupplyEvent],
   [L2Ops.PoolRetrieve, handlePoolRetrieveEvent],
-  [L2Ops.AddPool, handlePoolRetrieveEvent],
+  [L2Ops.AddPool, handleAddPoolEvent],
   [L2Ops.AddToken, handleAddTokenEvent],
 ]);
 
