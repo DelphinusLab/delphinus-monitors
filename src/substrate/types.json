@@ -1,13 +1,13 @@
 {
   "Ops": {
     "_enum": {
-      "Deposit": "(AccountId, U256, U256, U256, U256, L1TxHash)",
-      "Withdraw": "(AccountId, U256, U256, U256, U256, U256)",
-      "Swap": "(AccountId, U256, U256, U256, U256, U256, U256, U256, U256)",
-      "PoolSupply": "(AccountId, U256, U256, U256, U256, U256, U256, U256, U256, U256, U256)",
-      "PoolRetrieve": "(AccountId, U256, U256, U256, U256, U256, U256, U256, U256, U256, U256)",
+      "Deposit": "(AccountIndex, TokenIndex, Amount)",
+      "Withdraw": "(AccountIndex, TokenIndex, Amount, L1Account, NonceId)",
+      "Swap": "(U256, U256, U256, AccountIndex, PoolIndex, u8, Amount, NonceId)",
+      "PoolSupply": "(U256, U256, U256, AccountIndex, PoolIndex, Amount, Amount, NonceId)",
+      "PoolRetrieve": "(U256, U256, U256, AccountIndex, PoolIndex, Amount, Amount, NonceId)",
       "AddToken": "(TokenAddr, TokenIndex)",
-      "AddPool": "(TokenIndex, TokenIndex, PoolIndex)",
+      "AddPool": "(PoolIndex, TokenIndex, TokenIndex)",
       "Charge": "(AccountId, U128)"
     }
   },

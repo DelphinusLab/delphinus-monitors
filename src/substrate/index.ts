@@ -2,19 +2,11 @@ import BN from "bn.js";
 import substrateNode from "../../config/substrate-node.json";
 import { SubstrateClient } from "./client";
 import { EventQueue } from "./event-queue";
-import { handleDepositEvent, handleDepositPendingOps } from "./ops/deposit";
-import { handleWithdrawEvent, handleWithdrawPendingOps } from "./ops/withdraw";
-import { handleSwapEvent, handleSwapPendingOps } from "./ops/swap";
 import { L2Ops } from "./enums";
-import {
-  handlePoolSupplyEvent,
-  handlePoolSupplyPendingOps,
-} from "./ops/pool-supply";
-import { handlePoolRetrieveEvent, handlePoolRetrievePendingOps } from "./ops/pool-retrieve";
-import { registerBridge } from "./bridges";
-import { L2Storage } from "delphinus-zkp/src/business/command";
-import { handleAddTokenEvent, handleAddTokenPendingOps } from "./ops/add-token";
-import { handleAddPoolEvent } from "./ops/add-pool";
+import { CommandOp, L2Storage } from "delphinus-zkp/src/business/command";
+import { runZkp } from "delphinus-zkp/src/business/main";
+import { Field } from "delphinus-zkp/node_modules/delphinus-curves/src/field";
+import { dataToBN } from "./ops/common";
 
 const MonitorETHConfig: any = require("../../config/eth-config.json");
 const ETHConfig: any = require("solidity/clients/config");
@@ -23,37 +15,55 @@ const abi: any = require("solidity/clients/bridge/abi");
 const SECTION_NAME = "swapModule";
 
 async function loadL2Storage() {
-  return new L2Storage;
+  return new L2Storage();
 }
 
-const opsMap = new Map<L2Ops, (data: any[], storage: L2Storage) => Promise<void>>([
-  [L2Ops.Deposit, handleDepositEvent],
-  [L2Ops.Withdraw, handleWithdrawEvent],
-  [L2Ops.Swap, handleSwapEvent],
-  [L2Ops.PoolSupply, handlePoolSupplyEvent],
-  [L2Ops.PoolRetrieve, handlePoolRetrieveEvent],
-  [L2Ops.AddPool, handleAddPoolEvent],
-  [L2Ops.AddToken, handleAddTokenEvent],
+const opsMap = new Map<L2Ops, CommandOp>([
+  [L2Ops.Deposit, CommandOp.Deposit],
+  [L2Ops.Withdraw, CommandOp.Withdraw],
+  [L2Ops.Swap, CommandOp.Swap],
+  [L2Ops.PoolSupply, CommandOp.Supply],
+  [L2Ops.PoolRetrieve, CommandOp.Retrieve],
+  [L2Ops.AddPool, CommandOp.AddPool],
 ]);
+
+async function handleOp(
+  rid: string,
+  storage: L2Storage,
+  op: CommandOp,
+  data: any[]
+) {
+  return runZkp(
+    new Field(op),
+    data.map((x) => new Field(dataToBN(x))),
+    storage
+  );
+}
+
+async function handleEvent(storage: L2Storage, op: CommandOp, data: any[]) {
+  return handleOp(data[0], storage, op, data.slice(1));
+}
 
 async function handlePendingReq(kv: any[], storage: L2Storage) {
   console.log(kv[1].value.toString());
   const rid = kv[0].toString();
   console.log(`rid is ${rid}`);
 
+  const fn = (op: CommandOp, data: any[]) => handleOp(rid, storage, op, data);
+
   if (kv[1].value.isWithdraw) {
-    await handleWithdrawPendingOps(rid, kv[1].value.asWithdraw);
+    await fn(CommandOp.Withdraw, kv[1].value.asWithdraw);
   } else if (kv[1].value.isDeposit) {
-    await handleDepositPendingOps(rid, kv[1].value.asDeposit);
+    await fn(CommandOp.Deposit, kv[1].value.asDeposit);
   } else if (kv[1].value.isSwap) {
-    await handleSwapPendingOps(rid, kv[1].value.asSwap);
+    await fn(CommandOp.Swap, kv[1].value.asSwap);
   } else if (kv[1].value.isPoolSupply) {
-    await handlePoolSupplyPendingOps(rid, kv[1].value.asPoolSupply);
+    await fn(CommandOp.Supply, kv[1].value.asPoolSupply);
   } else if (kv[1].value.isPoolRetrieve) {
-    await handlePoolRetrievePendingOps(rid, kv[1].value.asPoolRetrieve);
-  } else if (kv[1].value.isAddToken) {
-    await handleAddTokenPendingOps(rid, kv[1].value.asAddToken, storage);
-  }  else {
+    await fn(CommandOp.Retrieve, kv[1].value.asPoolRetrieve);
+  } else if (kv[1].value.isAddPool) {
+    await fn(CommandOp.AddPool, kv[1].value.asAddPool);
+  } else {
     console.log(kv[1].value);
   }
 }
@@ -78,8 +88,9 @@ class TransactionQueue {
     const method = info[0];
     const data = info[1];
 
-    if (Object.values(L2Ops).find((op) => op === method)) {
-      await opsMap.get(method as L2Ops)?.(data, this.storage);
+    let op = opsMap.get(method as L2Ops);
+    if (op) {
+      await handleEvent(this.storage, op, data);
     }
   }
 

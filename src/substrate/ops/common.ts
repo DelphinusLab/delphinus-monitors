@@ -22,7 +22,7 @@ async function tryVerify(
       });
       console.log("done", r.blockHash);
       return r;
-    } catch (e) {
+    } catch (e: any) {
       if (txhash !== "") {
         console.log("exception with transactionHash ready", " will retry ...");
         throw(e);

@@ -1,63 +1,30 @@
 import BN from "bn.js";
-import { Verifier } from "../enums";
-import { dataToBN, handleReq } from "./common";
+import { Field } from "delphinus-zkp/node_modules/delphinus-curves/src/field";
+import { CommandOp, L2Storage } from "delphinus-zkp/src/business/command";
+import { runZkp } from "delphinus-zkp/src/business/main";
+import { dataToBN } from "./common";
 const l2address: any = require("../../eth/l2address");
 
-async function handleWithdrawReq(
-  rid: string,
-  account: string,
-  l1account: BN,
-  token: BN,
-  amount: BN,
-  nonce: BN,
-  finalAmount: BN
-) {
-  let l2account = l2address.ss58_to_bn(account);
-  let buffer = [
-    new BN(Verifier.Withdraw).shln(31 * 8),
-    l2account,
-    token,
-    finalAmount,
-    l1account,
-    amount,
-  ];
-  return handleReq("handleWithdrawReq", rid, account, nonce, buffer);
-}
-
-export async function handleWithdrawPendingOps(rid: string, asWithdraw: any[]) {
+export async function handleWithdrawOp(rid: string, asWithdraw: any[], 
+  storage: L2Storage) {
   let cursor = 0;
-  const account = asWithdraw[cursor++].toString();
-  const l1account = new BN(asWithdraw[cursor++].toString());
-  const token = new BN(asWithdraw[cursor++].toString());
-  const amount = new BN(asWithdraw[cursor++].toString());
-  const nonce = new BN(asWithdraw[cursor++].toString());
-  const amountRest = new BN(asWithdraw[cursor++].toString());
-  return handleWithdrawReq(
-    rid,
-    account,
-    l1account,
-    token,
-    amount,
-    nonce,
-    amountRest
+  const accountIndex = dataToBN(asWithdraw[cursor++]);
+  const l1Address = dataToBN(asWithdraw[cursor++]);
+  const tokenIndex = dataToBN(asWithdraw[cursor++]);
+  const amount = dataToBN(asWithdraw[cursor++]);
+  const nonce = dataToBN(asWithdraw[cursor++]);
+  
+  return runZkp(
+    new Field(CommandOp.Withdraw),
+    [0, 0, 0, accountIndex, tokenIndex, amount, l1Address].map((x) => new Field(x)),
+    storage
   );
 }
 
-export async function handleWithdrawEvent(data: any[]) {
-  const id = dataToBN(data[0]);
-  const account = data[1].toString();
-  const l1account = dataToBN(data[2]);
-  const token = dataToBN(data[3]);
-  const amount = dataToBN(data[4]);
-  const nonce = dataToBN(data[5]);
-  const restAmount = dataToBN(data[6]);
-  return handleWithdrawReq(
-    id.toString(),
-    account,
-    l1account,
-    token,
-    amount,
-    nonce,
-    restAmount
-  );
+export async function handleWithdrawEvent(
+  data: any[], 
+  storage: L2Storage
+) {
+  const rid = data[0].toString();
+  return handleWithdrawOp(rid, data.slice(1), storage);
 }
