@@ -2,8 +2,8 @@
   "Ops": {
     "_enum": {
       "Deposit": "(AccountIndex, TokenIndex, Amount)",
-      "Withdraw": "(AccountIndex, TokenIndex, Amount, L1Account, NonceId)",
-      "Swap": "(U256, U256, U256, AccountIndex, PoolIndex, u8, Amount, NonceId)",
+      "Withdraw": "(U256, U256, U256, AccountIndex, TokenIndex, Amount, L1Account, NonceId)",
+      "Swap": "(U256, U256, U256, AccountIndex, PoolIndex, Amount, u8, NonceId)",
       "PoolSupply": "(U256, U256, U256, AccountIndex, PoolIndex, Amount, Amount, NonceId)",
       "PoolRetrieve": "(U256, U256, U256, AccountIndex, PoolIndex, Amount, Amount, NonceId)",
       "AddToken": "(TokenAddr, TokenIndex)",

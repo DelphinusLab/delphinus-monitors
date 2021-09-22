@@ -89,7 +89,7 @@ class TransactionQueue {
     const data = info[1];
 
     let op = opsMap.get(method as L2Ops);
-    if (op) {
+    if (op !== undefined) {
       await handleEvent(this.storage, op, data);
     }
   }
