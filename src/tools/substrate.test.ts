@@ -23,7 +23,7 @@ const l1Address = 1;
 
 async function main() {
     const client = new SubstrateClient(
-        `${substrateNode["host-local"]}:${substrateNode.port}`, 3
+        `${substrateNode["host"]}:${substrateNode.port}`, 3
     );
 
     let nonce = 0;

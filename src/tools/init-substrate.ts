@@ -5,8 +5,7 @@
 import { SubstrateClient } from "../substrate/client";
 
 import substrateNode from "../../config/substrate-node.json";
-import L1TokenInfo from "solidity/build/contracts/Token.json";
-import RioTokenInfo from "solidity/build/contracts/Rio.json";
+import L1TokenInfo from "solidity/clients/token-index.json";
 import BN from "bn.js";
 
 const tokenInfo = L1TokenInfo;
@@ -20,17 +19,21 @@ function encodeGlobalTokenAddress(chainId: string, address: string) {
 
 async function main() {
     const client = new SubstrateClient(
-        `${substrateNode["host-local"]}:${substrateNode.port}`, 3
+        `${substrateNode["host"]}:${substrateNode.port}`, 3
     );
 
     let nonce = 0;
 
-    for (const network of Object.entries(tokenInfo.networks).slice(0, 2)) {
+    for (const network of Object.entries(tokenInfo)) {
         console.log((await client.getAPI()).tx.swapModule);
-        await client.send("addToken", encodeGlobalTokenAddress(network[0], network[1].address));
+        await client.send("addToken", new BN(network[0], 10));
     }
 
-    await client.send("addPool", 4, 5, nonce++);
+    for (let i = 0; i < Object.entries(tokenInfo).length; i++) {
+        for (let j = i + 1; j < Object.entries(tokenInfo).length; j++) {
+            await client.send("addPool", Object.entries(tokenInfo)[i][1], Object.entries(tokenInfo)[j][1], nonce++);
+        }
+    }
 
     await client.close();
 }

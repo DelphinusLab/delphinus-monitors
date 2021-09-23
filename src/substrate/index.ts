@@ -6,6 +6,7 @@ import { L2Ops } from "./enums";
 import { CommandOp, L2Storage } from "delphinus-zkp/src/business/command";
 import { runZkp } from "delphinus-zkp/src/business/main";
 import { Field } from "delphinus-zkp/node_modules/delphinus-curves/src/field";
+import { bridgeInfos, registerBridge } from "./bridges";
 
 const MonitorETHConfig: any = require("../../config/eth-config.json");
 const ETHConfig: any = require("solidity/clients/config");
@@ -18,7 +19,10 @@ async function loadL2Storage() {
 }
 
 export function dataToBN(data: any) {
-  return new BN(data.toHex().replace(/0x/, ""), 16);
+  if (data.toHex) {
+    data = data.toHex();
+  }
+  return new BN(data.replace(/0x/, ""), 16);
 }
 
 const opsMap = new Map<L2Ops, CommandOp>([
@@ -30,17 +34,80 @@ const opsMap = new Map<L2Ops, CommandOp>([
   [L2Ops.AddPool, CommandOp.AddPool],
 ]);
 
+async function verify(
+  bridge: any,
+  l2Account: string,
+  command: BN[],
+  proof: BN[],
+  rid: BN,
+  vid: number = 0
+) {
+  console.log("start to send to:", bridge.chain_hex_id);
+  while (true) {
+    let txhash = "";
+    try {
+      let tx = bridge.verify(0, command, proof, vid, 0, rid);
+      let r = await tx.when("Verify", "transactionHash", (hash: string) => {
+        console.log("Get transactionHash", hash);
+        txhash = hash;
+      });
+      console.log("done", r.blockHash);
+      return r;
+    } catch (e: any) {
+      if (txhash !== "") {
+        console.log("exception with transactionHash ready", " will retry ...");
+        console.log("exception with transactionHash ready", " will retry ...");
+        throw e;
+      } else {
+        if (e.message == "ESOCKETTIMEDOUT") {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        } else if (e.message == "nonce too low") {
+          console.log("failed on:", bridge.chain_hex_id, e.message); // not sure
+          return;
+        } else {
+          console.log("Unhandled exception during verify");
+          throw e;
+        }
+      }
+    }
+  }
+}
+
 async function handleOp(
   rid: string,
   storage: L2Storage,
   op: CommandOp,
-  data: any[]
+  args: any[]
 ) {
-  return runZkp(
+  const proof = await runZkp(
     new Field(op),
-    data.map((x) => new Field(dataToBN(x))),
+    args.map((x) => new Field(dataToBN(x))),
     storage
   );
+
+  console.log(proof);
+
+  const commandBuffer = [new BN(op)].concat(
+    // Fill padding to 8
+    args.concat(Array(8).fill(new BN(0))).slice(0, 8)
+  );
+
+  const proofBuffer = proof.map(dataToBN);
+
+  console.log("----- verify args -----");
+  console.log(commandBuffer);
+  console.log(proofBuffer);
+  console.log("----- verify args -----");
+
+  for (const bridgeInfo of bridgeInfos) {
+    await verify(
+      bridgeInfo.bridge,
+      "0",
+      commandBuffer,
+      proofBuffer,
+      dataToBN(rid)
+    );
+  }
 }
 
 async function handleEvent(storage: L2Storage, op: CommandOp, data: any[]) {
@@ -121,17 +188,18 @@ class TransactionQueue {
 
 async function main() {
   const client = new SubstrateClient(
-    `${substrateNode["host-local"]}:${substrateNode.port}`
+    `${substrateNode["host"]}:${substrateNode.port}`
   );
 
   const storage = await loadL2Storage();
   const queue = new TransactionQueue(client, storage);
 
   for (let config of MonitorETHConfig.filter((config: any) => config.enable)) {
-    //registerBridge(
-    //  config.name,
-    //  await abi.getBridge(ETHConfig[config.chainName], false)
-    //);
+    console.log("register bridge for chain: " + config.chain);
+    registerBridge(
+      config.name,
+      await abi.getBridge(ETHConfig[config.chainName], false)
+    );
   }
 
   console.log("getBridge");

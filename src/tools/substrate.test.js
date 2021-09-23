@@ -20,7 +20,7 @@ function encodeGlobalTokenAddress(chainId, address) {
 const account = "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y";
 const l1Address = 1;
 async function main() {
-    const client = new client_1.SubstrateClient(`${substrate_node_json_1.default["host-local"]}:${substrate_node_json_1.default.port}`, 3);
+    const client = new client_1.SubstrateClient(`${substrate_node_json_1.default["host"]}:${substrate_node_json_1.default.port}`, 3);
     let nonce = 0;
     let token = [];
     for (const network of Object.entries(tokenInfo.networks).slice(0, 2)) {
