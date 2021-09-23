@@ -6,7 +6,6 @@ import { L2Ops } from "./enums";
 import { CommandOp, L2Storage } from "delphinus-zkp/src/business/command";
 import { runZkp } from "delphinus-zkp/src/business/main";
 import { Field } from "delphinus-zkp/node_modules/delphinus-curves/src/field";
-import { dataToBN } from "./ops/common";
 
 const MonitorETHConfig: any = require("../../config/eth-config.json");
 const ETHConfig: any = require("solidity/clients/config");
@@ -16,6 +15,10 @@ const SECTION_NAME = "swapModule";
 
 async function loadL2Storage() {
   return new L2Storage();
+}
+
+export function dataToBN(data: any) {
+  return new BN(data.toHex().replace(/0x/, ""), 16);
 }
 
 const opsMap = new Map<L2Ops, CommandOp>([
