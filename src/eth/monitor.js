@@ -9,6 +9,7 @@ const l2address = require('./l2address');
 const BigNumber = Web3.utils.BN;
 const event_queue = require('../substrate/event-queue');
 const RioTokenInfo = require("solidity/build/contracts/Rio.json");
+const tokenIndex = require("solidity/clients/token-index.json");
 
 let config = EthConfig[process.argv[2]];
 console.log("config:", config);
@@ -25,6 +26,11 @@ function to_hex_str(a) {
   return ("0x" + c.toString(16));
 }
 
+function to_dec_str(a) {
+  let c = new BigNumber(a);
+  return (c.toString(10));
+}
+
 let queue = new event_queue.EventQueue(async (id) => {
   await client.ack(id);
 });
@@ -34,7 +40,8 @@ async function handle_deposit(v, hash_str) {
   let l2account = l2address.bn_to_ss58(v.l2account);
   console.log("To l2 account:", l2account, " with amount: ", v.amount);
   console.log("Final balance:", v.balance, to_hex_str(v.l2account));
-  await client.deposit(l2account, v.l1token, v.amount, hash_str);
+
+  await client.deposit(l2account, tokenIndex[to_dec_str(v.l1token)], v.amount, hash_str);
 }
 
 async function handle_charge(v) {
