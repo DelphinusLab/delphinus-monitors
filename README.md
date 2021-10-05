@@ -2,111 +2,94 @@
 
 [Supervisor](https://github.com/Supervisor/supervisor) is a client/server system that allows its users to monitor and control a number of processes on UNIX-like operating systems. We use supervisor to monitor process.
 
-The server piece of supervisor is named **supervisord**.  It is responsible for starting child programs at its own invocation, responding to commands from clients, restarting crashed or exited subprocesseses, logging its subprocess stdout and stderr output, and generating and handling “events” corresponding to points in subprocess lifetimes.
+Note that Supervisor has been tested and is known to run on Linux (Ubuntu 18.04), Mac OS X (10.4/10.5/10.6), and Solaris (10 for Intel) and FreeBSD 6.1. It will likely work fine on most UNIX systems and will *not* run at all under any version of Windows.
 
-Here we take Ubuntu for example, you can get more info [here](http://supervisord.org/).
+Here is an introuduction to web user interface of supervisor. Go through the following:
 
-## Install supervisord:
+## Install supervisord
 
-```bash
-# install Supervisord
-sudo apt-get install -y supervisor
+The server piece of supervisor is named **supervisord**. It is responsible for starting child programs at its own invocation, responding to commands from clients, restarting crashed or exited subprocesseses, logging its subprocess stdout and stderr output, and generating and handling “events” corresponding to points in subprocess lifetimes.
 
-```
-
-## Configuration
-
-Configuration files of supervisord is in `/etc/supervisor`.  If we look at the configuration file `/etc/supervisord/supervisord.conf`, we'll see at the following at the bottom:
-
-```
-[include]
-files = /etc/supervisor/conf.d/*.conf
-```
-It means any files found in `/etc/supervisor/conf.d/` and ending in `.conf` will be included.
-
-Create a configuration at `/etc/supervisor/conf.d/webhooks.conf`:
-
-```
-[program:nodehook]
-command=/usr/bin/node /srv/http.js
-directory=/srv
-autostart=true
-autorestart=true
-startretries=3
-stderr_logfile=/var/log/webhook/nodehook.err.log
-stdout_logfile=/var/log/webhook/nodehook.out.log
-user=www-data
-environment=SECRET_PASSPHRASE='this is secret',SECRET_TWO='another secret'
-```
-
-You can copy `webhook.conf` in the direcrtory of `README.md` to "/etc/supervisor/conf.d/".
-
-1. [program:nodehook] - Define the program to monitor. We'll call it "nodehook".
-2. command - This is the command to run that kicks off the monitored process. We use "node" and run the "http.js" file. If you needed to pass any command line arguments or other data, you could do so here.
-3. directory - Set a directory for Supervisord to "cd" into for before running the process, useful for cases where the process assumes a directory structure relative to the location of the executed script.
-4. autostart - Setting this "true" means the process will start when Supervisord starts (essentially on system boot).
-5. autorestart - If this is "true", the program will be restarted if it exits unexpectedly.
-6. startretries - The number of retries to do before the process is considered "failed"
-7. stderr_logfile - The file to write any errors output.
-8. stdout_logfile - The file to write any regular output.
-9. user - The user the process is run as.
-10. environment - Environment variables to pass to the process.
-
-Supervisord won't create a directory for logs if they do not exist; We need to create them before running Supervisord:
-
-```
-sudo mkdir /var/log/webhook
-```
-
-## Web Interface
-
-Inside of `/etc/supervisord.conf`, add this to configure a web interface in which there are all process being monitored and we can restart, stop, clear logs and check output on process:
-
-```
-[inet_http_server]
-port = 9001
-username = user # username
-password = pass # password
-
-```
-You can copy `supervisord.conf` in the directory of `README.md` to overwrite `/etc/supervisor/supervisord.conf`.
-
-Access the server in a web browser at port 9001, we'll see a web interface. Click the process name ("nodehook" in this case) will show the logs for that process.
-
-The interface asks you for a username and a password. In this case, enter "user" and "pass" to the input boxes.
-
-## Run Locally
+Supervisor can be installed with `pip install`:
 
 ```bash
-# start supervisor as a service
-sudo service supervisor start
-# Now that we've configured Supervisord to monitor process, we can read the configuration in and then reload Supervisord, using the "supervisorctl" tool:
-supervisorctl reread
-supervisorctl update
-# running process; the command will enter into a console
-supervisorctl
-```
-In the console of supervisorctl:
-
-Start nodehook process:
-
-```bash
-start nodehook
+pip install supervisor
 ```
 
-Stop nodehook:
+Depending on the permissions of your system’s Python, you might need to be the root user to install Supervisor successfully using  `pip`.
 
-```bash
-stop nodehook
+You can install it without `pip`，get more info [here](http://supervisord.org/installing.html).
+
+## Configuration File
+
+The server process supervisord uses a configuration file which is typically located in `/etc/supervisord.conf`. Keep this file secure via proper filesystem permissions because it may contain unencrypted usernames and passwords.
+
+Run:
+
+```
+echo_supervisord_conf > supervisord.conf
 ```
 
-Use <ctrl+c> or type "exit" to get out of the supervisorctl tool.
+to place the configuration file in the current directory. You can place it in `/etc` as long as you have root access.
 
-You can also use theses commands in terminal(**Not in supervisorctl console**):
+You can simply use `supervisord.conf` in the same directory of the `README.md` which is preconfigured.
 
-```bash
-supervisorctl start nodebook
-supervisorctl stop nodebook
-```
-Enter `localhost:9001` in a browser to access the server. Enter the username and the password to the web interface. Switch to root account may help solving problems when you run the commands above.
+Note that you sholud change `command` in `[program:monitor]` section in `supervisord.conf`. The command will be run when supervisord is started.
 
+If you want to configure supervisor by yourselft, visit http://supervisord.org/configuration.html.
+
+## Run Web Server
+
+The command-line client piece of the supervisor is named **supervisorctl**.  It provides a shell-like interface to the features provided by supervisord.  From supervisorctl, a user can connect to different supervisord processes (one at a time), get status on the subprocesses controlled by, stop and start subprocesses of, and get lists of running processes of a supervisord.
+
+A (sparse) web user interface with functionality comparable to supervisorctl may be accessed via a browser if you start supervisord against an internet socket.
+
+At first, you shoud find out the place in which your supervisord and supervisorctl was installed. The position depends on platforms you use. Say, run `whereis supervisord` to find out the place. You should find the place of supervisorctl in the same directory. Here we take `~/.local/bin/` according to the output of `whereis supervisord` in Ubuntu version 20.04 for example.
+
+### Start **supervisord**
+
+run
+
+````
+~/.local/bin/supervisord -c supervisord.conf
+````
+
+The “-c” argument after the command above specifying an absolute path to a configuration file to ensure that someone doesn’t trick you into running supervisor from within a directory that contains a rogue `supervisord.conf` file. Here use the configuration file in the same directory of `README.md`.
+
+### Start **supervisorctl**
+
+run
+
+````
+~/.local/bin/supervisorctl
+````
+
+A shell will be presented that will allow you to control the processes that are currently managed by supervisord. In the shell, you can run `supervisorctl stop all` to terminate the supervisord process.
+
+### Visit the Server URL
+
+Visit the server URL on which supervisord server is listening (default “http://localhost:9001”) to view and control process status through the web interface.
+
+You can change the server URL via `-s` argument. See [here](http://supervisord.org/running.html#supervisorctl-command-line-options).
+
+### An Brief Introduction To the Web Interface
+
+The web page of the browser would ask for username and password. You can find them in the `[inet_http_server]` section in `supervisord.conf`.
+
+In the web interface, there is a process named monitor in the table if you do not change the name of the program in `supervisord.conf`.
+
+There are three buttons on the table:
+
+1. REFRESH: refresh the page
+2. RESTART ALL: restart all process
+3. STOP ALL: terminate all process
+
+Here is the explanation of each column in the table:
+
+1. The 1st column is the state of the process
+
+2. The 2nd column is the time when the process start or restart
+
+3. The 3nd column is the name of the process, click the name to view the output of the process
+
+4. The last column is the operation you can do. The first one is for starting the process. The second one is clear log of the process. The third one is the output of the process. The last one is the error of the process.
