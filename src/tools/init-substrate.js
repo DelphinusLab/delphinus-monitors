@@ -20,10 +20,6 @@ function encodeGlobalTokenAddress(chainId, address) {
 async function main() {
     const client = new client_1.SubstrateClient(`${substrate_node_json_1.default["host"]}:${substrate_node_json_1.default.port}`, 3);
     let nonce = 0;
-    for (const network of Object.entries(tokenInfo)) {
-        console.log((await client.getAPI()).tx.swapModule);
-        await client.send("addToken", new bn_js_1.default(network[0], 10));
-    }
     for (let i = 0; i < Object.entries(tokenInfo).length; i++) {
         for (let j = i + 1; j < Object.entries(tokenInfo).length; j++) {
             await client.send("addPool", Object.entries(tokenInfo)[i][1], Object.entries(tokenInfo)[j][1], nonce++);

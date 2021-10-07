@@ -8,7 +8,7 @@
     {
       "chainId": 16,
       "chainName": "localtestnet2",
-      "enable": false,
+      "enable": true,
       "L2account": "//Alice//stash"
     },
     {

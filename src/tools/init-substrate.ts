@@ -24,11 +24,6 @@ async function main() {
 
     let nonce = 0;
 
-    for (const network of Object.entries(tokenInfo)) {
-        console.log((await client.getAPI()).tx.swapModule);
-        await client.send("addToken", new BN(network[0], 10));
-    }
-
     for (let i = 0; i < Object.entries(tokenInfo).length; i++) {
         for (let j = i + 1; j < Object.entries(tokenInfo).length; j++) {
             await client.send("addPool", Object.entries(tokenInfo)[i][1], Object.entries(tokenInfo)[j][1], nonce++);

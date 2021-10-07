@@ -46,6 +46,11 @@ async function verify(
   while (true) {
     let txhash = "";
     try {
+      let metadata = await bridge.getMetaData();
+      if (metadata.rid >= rid) {
+        return;
+      }
+
       let tx = bridge.verify(0, command, proof, vid, 0, rid);
       let r = await tx.when("Verify", "transactionHash", (hash: string) => {
         console.log("Get transactionHash", hash);
@@ -66,6 +71,7 @@ async function verify(
           return;
         } else {
           console.log("Unhandled exception during verify");
+          console.log(e);
           throw e;
         }
       }
@@ -195,11 +201,10 @@ async function main() {
   const queue = new TransactionQueue(client, storage);
 
   for (let config of MonitorETHConfig.filter((config: any) => config.enable)) {
-    console.log("register bridge for chain: " + config.chain);
-    registerBridge(
-      config.name,
-      await abi.getBridge(ETHConfig[config.chainName], false)
-    );
+    console.log("register bridge for chain: " + config.chainName);
+    const bridge = await abi.getBridge(ETHConfig[config.chainName], false);
+    console.log("after register bridge for chain: " + bridge);
+    registerBridge(config.chainName, bridge);
   }
 
   console.log("getBridge");
