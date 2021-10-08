@@ -207,9 +207,7 @@ async function main() {
   const queue = new TransactionQueue(client, storage);
 
   for (let config of MonitorETHConfig.filter((config: any) => config.enable)) {
-    console.log("register bridge for chain: " + config.chainName);
     const bridge = await abi.getBridge(ETHConfig[config.chainName], false);
-    console.log("after register bridge for chain: " + bridge);
     registerBridge(config.chainName, bridge);
   }
 
@@ -220,21 +218,21 @@ async function main() {
 
   const txMap = await client.getPendingReqMap();
   const txList = Array.from(txMap.entries())
-    .map((kv: any) => [new BN(kv[0].replace("0x", "")), kv[1]])
+    .map((kv: any) => [dataToBN(kv[0]), kv[1]])
     .sort((kv1: any, kv2: any) => kv1[0] - kv2[0]);
 
   console.log(txList.length);
 
   const _minRid =
     txList.length === 0
-      ? (await client.getAPI()).query.swapModule.reqIndex.toString()
+      ? (await (await client.getAPI()).query.swapModule.reqIndex()).toString()
       : txList[0][0].toString();
   const minRid = parseInt(_minRid);
   if (minRid > 0) {
     await storage.loadSnapshot(minRid - 1);
   }
 
-  console.log("test start from rid", minRid);
+  console.log("test start from rid", _minRid);
 
   for (const kv of txList) {
     await handlePendingReq(kv, storage);
