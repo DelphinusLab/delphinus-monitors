@@ -85,6 +85,8 @@ async function handleOp(
   op: CommandOp,
   args: any[]
 ) {
+  await storage.startSnapshot(parseInt(rid));
+
   const proof = await runZkp(
     new Field(op),
     args.map((x) => new Field(dataToBN(x))),
@@ -114,6 +116,10 @@ async function handleOp(
       dataToBN(rid)
     );
   }
+
+  console.log("before end snapshot", rid);
+  await storage.endSnapshot();
+  console.log("after end snapshot", rid);
 }
 
 async function handleEvent(storage: L2Storage, op: CommandOp, data: any[]) {
@@ -218,6 +224,17 @@ async function main() {
     .sort((kv1: any, kv2: any) => kv1[0] - kv2[0]);
 
   console.log(txList.length);
+
+  const _minRid =
+    txList.length === 0
+      ? (await client.getAPI()).query.swapModule.reqIndex.toString()
+      : txList[0][0].toString();
+  const minRid = parseInt(_minRid);
+  if (minRid > 0) {
+    await storage.loadSnapshot(minRid - 1);
+  }
+
+  console.log("test start from rid", minRid);
 
   for (const kv of txList) {
     await handlePendingReq(kv, storage);
