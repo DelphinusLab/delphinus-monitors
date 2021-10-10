@@ -47,7 +47,7 @@ async function verify(
     let txhash = "";
     try {
       let metadata = await bridge.getMetaData();
-      if (metadata.rid >= rid) {
+      if ((new BN(metadata.bridgeInfo.rid)).gte(rid)) {
         return;
       }
 
