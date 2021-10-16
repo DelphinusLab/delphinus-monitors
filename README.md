@@ -23,3 +23,5 @@ sh run.sh
 
 Enter `localhost:9001` in a browser to access the server. Enter the username and the password to the web interface. Switch to root account may help solving problems when you run the commands above.
 
+## Start mongo db
+mongod --fork --logpath mongo/monitor.log --dbpath mongo
