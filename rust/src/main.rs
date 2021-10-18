@@ -3,8 +3,9 @@ use ethcontract::futures::TryStreamExt;
 
 const MONITOR_ACCOUNT:&str = "0x6f6ef6dfe681b6593ddf27da3bfde22083aef88b";
 const BSC_PROVIDER:&str = "wss://bsc.getblock.io/testnet/?api_key=182a8e0d-c03a-44ac-b856-41d2e47801db";
-//ethcontract::contract!("../../solidity/build/contracts/Bridge.json");
-ethcontract::contract!("Bridge.json");
+ethcontract::contract!("../../solidity/build/contracts/Bridge.json");
+
+use mongodb::{bson::doc, options::ClientOptions, Client};
 
 #[tokio::main]
 async fn main() -> Result<(), web3::Error> {
@@ -24,10 +25,11 @@ async fn main() -> Result<(), web3::Error> {
 
     let event_history_stream = bridge_instance
         .all_events()
-        .from_block(BlockNumber::Latest)
+        .from_block(BlockNumber::Earliest)
         .query_paginated()
         .await
         .expect("Couldn't retrieve event history");
+
     println!("Status: {:?}", bridge_info);
 
     let event_history_vec = event_history_stream
@@ -35,6 +37,10 @@ async fn main() -> Result<(), web3::Error> {
         .await
         .expect("Couldn't parse event");
 
-    println!("Events: {:?}", event_history_vec.len());
+    println!("Events: {:?} collected", event_history_vec.len());
+    for e in &event_history_vec {
+        println!("Event: {:?}", e);
+    };
+
     Ok(())
 }
