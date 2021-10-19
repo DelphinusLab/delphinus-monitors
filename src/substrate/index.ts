@@ -220,13 +220,15 @@ async function main() {
   const txList = Array.from(txMap.entries())
     .map((kv: any) => [dataToBN(kv[0]), kv[1]])
     .sort((kv1: any, kv2: any) => kv1[0] - kv2[0]);
+  console.log("pending req length", txList.length);
 
-  console.log(txList.length);
+  const lastRid = (await (await client.getAPI()).query.swapModule.reqIndex()).toString();
+  console.log("last req id", lastRid);
 
   const commitedRid =
     txList.length === 0
-    ? dataToBN((await (await client.getAPI()).query.swapModule.reqIndex()))
-    : dataToBN(txList[0][0]).subn(1);
+    ? new BN(lastRid, 10)
+    : new BN(txList[0][0].toString(), 10).subn(1);
 
   console.log("checkout db snapshot to", commitedRid.toString(10));
   storage.loadSnapshot(commitedRid.toString(10));
