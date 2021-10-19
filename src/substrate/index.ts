@@ -231,7 +231,7 @@ async function main() {
     : new BN(txList[0][0].toString(), 10).subn(1);
 
   console.log("checkout db snapshot to", commitedRid.toString(10));
-  storage.loadSnapshot(commitedRid.toString(10));
+  await storage.loadSnapshot(commitedRid.toString(10));
 
   for (const kv of txList) {
     await handlePendingReq(kv, storage);
