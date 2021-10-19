@@ -113,7 +113,7 @@ async function handleOp(
       "0",
       commandBuffer,
       proofBuffer,
-      dataToBN(rid)
+      new BN(rid, 10)
     );
   }
 
