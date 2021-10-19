@@ -21,6 +21,7 @@
     "bn.js": "^5.2.0",
     "bs58": "^4.0.1",
     "delphinus-zkp": "*",
+    "delphinus-curves": "*",
     "fs-extra": "^10.0.0",
     "mongodb": "^3.6.6",
     "polkadot": "^1.0.0",

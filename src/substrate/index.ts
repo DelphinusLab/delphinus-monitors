@@ -5,7 +5,7 @@ import { EventQueue } from "./event-queue";
 import { L2Ops } from "./enums";
 import { CommandOp, L2Storage } from "delphinus-zkp/src/business/command";
 import { runZkp } from "delphinus-zkp/src/business/main";
-import { Field } from "delphinus-zkp/node_modules/delphinus-curves/src/field";
+import { Field } from "delphinus-curves/src/field";
 import { bridgeInfos, registerBridge } from "./bridges";
 
 const MonitorETHConfig: any = require("../../config/eth-config.json");
@@ -85,7 +85,7 @@ async function handleOp(
   op: CommandOp,
   args: any[]
 ) {
-  await storage.startSnapshot(parseInt(rid));
+  await storage.startSnapshot(rid);
 
   const proof = await runZkp(
     new Field(op),
@@ -223,16 +223,13 @@ async function main() {
 
   console.log(txList.length);
 
-  const _minRid =
+  const commitedRid =
     txList.length === 0
-      ? (await (await client.getAPI()).query.swapModule.reqIndex()).toString()
-      : txList[0][0].toString();
-  const minRid = parseInt(_minRid);
-  if (minRid > 0) {
-    await storage.loadSnapshot(minRid - 1);
-  }
+    ? dataToBN((await (await client.getAPI()).query.swapModule.reqIndex()))
+    : dataToBN(txList[0][0]).subn(1);
 
-  console.log("test start from rid", _minRid);
+  console.log("checkout db snapshot to", commitedRid.toString(10));
+  storage.loadSnapshot(commitedRid.toString(10));
 
   for (const kv of txList) {
     await handlePendingReq(kv, storage);
