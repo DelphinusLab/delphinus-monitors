@@ -9,11 +9,12 @@ const l2address = require('./l2address');
 const BigNumber = Web3.utils.BN;
 const event_queue = require('../substrate/event-queue');
 const RioTokenInfo = require("solidity/build/contracts/Rio.json");
+const Secrets = require('solidity/.secrets.json');
 
-let config = EthConfig[process.argv[2]];
+let config = EthConfig[process.argv[2]](Secrets);
 console.log("config:", config);
 
-const BridgeJSON = require(config.contracts + "/Bridge.json");
+const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 
 let etracker = new EthSubscriber.EventTracker(config.device_id, BridgeJSON, config, async (n,v,hash) => {});
 

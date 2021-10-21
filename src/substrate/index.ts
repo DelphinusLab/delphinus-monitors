@@ -11,6 +11,8 @@ import { bridgeInfos, registerBridge } from "./bridges";
 const MonitorETHConfig: any = require("../../config/eth-config.json");
 const ETHConfig: any = require("solidity/clients/config");
 const abi: any = require("solidity/clients/bridge/abi");
+/* We should using local secrets instead of debuggin secrets */
+const Secrets: any = require('solidity/.secrets.json');
 
 const SECTION_NAME = "swapModule";
 
@@ -207,7 +209,7 @@ async function main() {
   const queue = new TransactionQueue(client, storage);
 
   for (let config of MonitorETHConfig.filter((config: any) => config.enable)) {
-    const bridge = await abi.getBridge(ETHConfig[config.chainName], false);
+    const bridge = await abi.getBridge(ETHConfig[config.chainName](Secrets), false);
     registerBridge(config.chainName, bridge);
   }
 

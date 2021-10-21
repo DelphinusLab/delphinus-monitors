@@ -11,7 +11,12 @@ const event_queue = require('../substrate/event-queue');
 const RioTokenInfo = require("solidity/build/contracts/Rio.json");
 const tokenIndex = require("solidity/clients/token-index.json");
 
-let config = EthConfig[process.argv[2]];
+
+/* We should using local secrets instead of debuggin secrets */
+const Secrets = require('solidity/.secrets.json');
+const BridgeJSON = require('solidity/build/contracts/Bridge.json');
+
+let config = EthConfig[process.argv[2]](Secrets);
 console.log("config:", config);
 
 let charge_address = RioTokenInfo.networks[config.device_id].address;
@@ -67,8 +72,6 @@ let handlers = {
     await client.ack(v.rid);
   }
 }
-
-const BridgeJSON = require(config.contracts + "/Bridge.json");
 
 let etracker = new EthSubscriber.EventTracker(config.device_id, BridgeJSON, config, async (n,v,hash) => {
   await handlers[n](v, hash);
