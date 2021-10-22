@@ -1,0 +1,28 @@
+{
+  "localtestnet1": {
+    "mongodb_url": "mongodb://localhost:27017",
+    "web3_source": "ws://127.0.0.1:8546",
+    "monitor_account": "0x6f6ef6dfe681b6593ddf27da3bfde22083aef88b",
+    "device_id": "15",
+    "chain_name": "localtestnet1"
+  },
+  "localtestnet2": {
+    "mongodb_url": "mongodb://localhost:27017",
+    "web3_source": "ws://127.0.0.1:8746",
+    "monitor_account": "0x6f6ef6dfe681b6593ddf27da3bfde22083aef88b",
+    "device_id": "16",
+    "chain_name": "localtestnet2"
+  },
+  "bsctestnet": {
+    "mongodb_url": "mongodb://localhost:27017",
+    "monitor_account": "0x6ea23f9b85ba97890a87b83882696f64ad09f5b6",
+    "device_id": "97",
+    "chain_name": "bsctestnet"
+  },
+  "ropsten": {
+    "mongodb_url": "mongodb://localhost:27017",
+    "monitor_account": "0x6f6ef6dfe681b6593ddf27da3bfde22083aef88b",
+    "device_id": "3",
+    "chain_name": "ropsten"
+  }
+}
