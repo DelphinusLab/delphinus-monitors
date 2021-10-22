@@ -10,4 +10,6 @@ tokio = { version = "1.12.0", features = ["full"] }
 web3 = "0.17.0"
 ethcontract = "0.15.3"
 mongodb = "2.0.1"
-
+url = "2.2.2"
+structopt = "0.3.25"
+serde = "1.0.117:
