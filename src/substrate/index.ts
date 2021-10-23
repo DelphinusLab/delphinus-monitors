@@ -240,6 +240,8 @@ async function main() {
   }
 
   queue.setStartHeader(client.lastHeader);
+
+  await storage.closeDb();
 }
 
 main();
