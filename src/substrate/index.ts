@@ -3,8 +3,8 @@ import substrateNode from "../../config/substrate-node.json";
 import { SubstrateClient } from "./client";
 import { EventQueue } from "./event-queue";
 import { L2Ops } from "./enums";
-import { CommandOp, L2Storage } from "delphinus-zkp/src/business/command";
-import { runZkp } from "delphinus-zkp/src/business/main";
+import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
+import { runZkp } from "delphinus-zkp/src/zokrates/main";
 import { Field } from "delphinus-curves/src/field";
 import { bridgeInfos, registerBridge } from "./bridges";
 
