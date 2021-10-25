@@ -19,6 +19,10 @@ struct Cli {
 
     #[structopt(short = "v")]
     verify_args: Vec<U256>,
+    #[structopt(short = "d")]
+    token: u8,
+    amount: U256,
+    l2account_d: U256
 }
 
 #[tokio::main]
@@ -89,6 +93,22 @@ async fn main() -> Result<(),  web3::Error> {
                 process::exit(1);
             }
         };
+
+    let token: H160 = H160::repeat_byte(args.token);
+    let amount: U256 = args.amount;
+    let l2account_d: U256 = args.l2account_d;
+    match bridge_instance
+        .deposit(token, amount, l2account_d)
+        .call()
+        .await {
+            Ok(dep_info) => {
+                println!("deposit result: {:?}", dep_info);
+            },
+            Err(e) => {
+                println!("Deposit failed: {}.", e);
+                process::exit(1);
+            }
+        };
     let event_history_stream = match bridge_instance
         .all_events()
         .from_block(BlockNumber::Earliest)
@@ -100,6 +120,7 @@ async fn main() -> Result<(),  web3::Error> {
                 process::exit(1);
             }
         };
+
     let event_history_vec = event_history_stream
         .try_collect::<Vec<_>>()
         .await.unwrap();
@@ -108,6 +129,7 @@ async fn main() -> Result<(),  web3::Error> {
     for e in &event_history_vec {
         println!("Event: {:?}", e);
     };
+
     let path = "./src/config.json";
     let file = match File::open(path) {
         Ok(file) => file,
@@ -169,5 +191,6 @@ async fn main() -> Result<(),  web3::Error> {
             process::exit(1);
         }
     }
+
     Ok(())
 }
