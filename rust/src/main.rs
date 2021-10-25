@@ -15,7 +15,10 @@ use mongodb::{bson::doc, options::ClientOptions, Client};
 
 #[derive(StructOpt)]
 struct Cli {
-    url: String
+    url: String,
+
+    #[structopt(short = "v")]
+    verify_args: Vec<U256>,
 }
 
 #[tokio::main]
@@ -23,6 +26,12 @@ async fn main() -> Result<(),  web3::Error> {
     //let ws_connect = web3::transports::WebSocket::new(BSC_PROVIDER).await?;
     //let web3 = web3::Web3::new(ws_connect);
     let args = Cli::from_args();
+    let verify_args = args.verify_args;
+    if verify_args.len() != 6 {
+        println!("You should provide 6 arguments for verify.");
+        process::exit(1);
+    }
+
     let url = args.url.as_str();
     let account = MONITOR_ACCOUNT.parse().unwrap();
     match Url::parse(url) {
@@ -55,7 +64,6 @@ async fn main() -> Result<(),  web3::Error> {
         .await {
             Ok(bri_info) => {
                 println!("Bridge info: {:?}", bri_info);
-                bri_info
             },
             Err(e) => {
                 println!("Get the bridge info failed: {}.", e);
@@ -63,6 +71,24 @@ async fn main() -> Result<(),  web3::Error> {
             }
         };
 
+    let l2account_v: U256 = verify_args[0];
+    let tx_data = vec![verify_args[1]];
+    let verify_data = vec![verify_args[2]];
+    let vid: U256 = verify_args[3];
+    let nonce: U256 = verify_args[4];
+    let rid: U256 = verify_args[5];
+    match bridge_instance
+        .verify(l2account_v, tx_data, verify_data, vid, nonce, rid)
+        .call()
+        .await {
+            Ok(ver_info) => {
+                println!("verify result: {:?}", ver_info);
+            },
+            Err(e) => {
+                println!("Verify failed: {}.", e);
+                process::exit(1);
+            }
+        };
     let event_history_stream = match bridge_instance
         .all_events()
         .from_block(BlockNumber::Earliest)
@@ -74,7 +100,6 @@ async fn main() -> Result<(),  web3::Error> {
                 process::exit(1);
             }
         };
-
     let event_history_vec = event_history_stream
         .try_collect::<Vec<_>>()
         .await.unwrap();
@@ -83,7 +108,6 @@ async fn main() -> Result<(),  web3::Error> {
     for e in &event_history_vec {
         println!("Event: {:?}", e);
     };
-
     let path = "./src/config.json";
     let file = match File::open(path) {
         Ok(file) => file,
