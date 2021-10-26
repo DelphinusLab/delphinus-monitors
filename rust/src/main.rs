@@ -67,7 +67,9 @@ async fn main() -> Result<(),  web3::Error> {
         .call()
         .await {
             Ok(bri_info) => {
-                println!("Bridge info: {:?}", bri_info);
+                println!("Bridge info:");
+                let (a, b, c, d, e, f) = bri_info;
+                println!("chain_id: {}, amount_token: {}, amount_pool: {}, owner: {:?}, merkle_root: {}, rid: {}", a, b, c, d, e, f);
             },
             Err(e) => {
                 println!("Get the bridge info failed: {}.", e);
