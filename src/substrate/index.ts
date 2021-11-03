@@ -53,6 +53,16 @@ async function verify(
         return;
       }
 
+      /**
+       * TODO: The exception behavior (e.g. network delay) will cause
+       * the following statement to be executed multiple times,
+       * thus consuming additional gas fee.
+       *
+       * We may introduce a db to filter out extra invoking.
+       * 1. save (rid, txhash) into db
+       * 2. check if the rid exists in the db
+       * 3. get hash from db, and check if it is pending in eth
+       */
       let tx = bridge.verify(0, command, proof, vid, 0, rid);
       let r = await tx.when("Verify", "transactionHash", (hash: string) => {
         console.log("Get transactionHash", hash);
@@ -89,6 +99,10 @@ async function handleOp(
 ) {
   await storage.startSnapshot(rid);
 
+  /**
+   * TODO: we can save proof in the filesystem, thus
+   * recover interrupted rid can skip generating proof.
+   */
   const proof = await runZkp(
     new Field(op),
     args.map((x) => new Field(dataToBN(x))),
@@ -124,10 +138,6 @@ async function handleOp(
   console.log("after end snapshot", rid);
 }
 
-async function handleEvent(storage: L2Storage, op: CommandOp, data: any[]) {
-  return handleOp(data[0], storage, op, data.slice(1));
-}
-
 async function handlePendingReq(kv: any[], storage: L2Storage) {
   console.log(kv[1].value.toString());
   const rid = kv[0].toString();
@@ -152,51 +162,27 @@ async function handlePendingReq(kv: any[], storage: L2Storage) {
   }
 }
 
-class TransactionQueue {
-  client: SubstrateClient;
-  isReady: boolean = false;
-  startHeader: any;
-  blockQueue: EventQueue<any>;
-  eventQueue: EventQueue<[string, any]>;
-  storage: L2Storage;
+async function handlePendingReqs(client: SubstrateClient, storage: L2Storage) {
+  /* transactions that havn't receive ack. */
+  const txMap = await client.getPendingReqMap();
+  const txList = Array.from(txMap.entries())
+    .map((kv: any) => [dataToBN(kv[0]), kv[1]])
+    .sort((kv1: any, kv2: any) => kv1[0] - kv2[0]);
+  console.log("pending req length", txList.length);
 
-  constructor(_client: SubstrateClient, storage: L2Storage) {
-    this.client = _client;
-    this.blockQueue = new EventQueue(this._handleBlock.bind(this));
-    this.eventQueue = new EventQueue(this._handleEvent.bind(this));
-    this.storage = storage;
-  }
+  if (txList.length !== 0) {
+    const commitedRid = new BN(txList[0][0].toString(), 10).subn(1);
 
-  private async _handleEvent(info: [string, any]) {
-    console.log("Got event: " + info);
-    const method = info[0];
-    const data = info[1];
+    console.log("checkout db snapshot to", commitedRid.toString(10));
+    await storage.loadSnapshot(commitedRid.toString(10));
 
-    let op = opsMap.get(method as L2Ops);
-    if (op !== undefined) {
-      await handleEvent(this.storage, op, data);
+    for (const kv of txList) {
+      await handlePendingReq(kv, storage);
     }
-  }
 
-  private async _handleBlock(header: any) {
-    if (header.number > this.startHeader.number) {
-      const events = await this.client.getEvents(header);
-      events
-        .filter((e: any) => e.event.section === SECTION_NAME)
-        .forEach((e: any) => {
-          this.eventQueue.push([e.event.method, e.event.data]);
-        });
-    }
-  }
-
-  public async handleBlock(header: any) {
-    this.blockQueue.push(header, this.isReady);
-  }
-
-  public async setStartHeader(header: any) {
-    this.startHeader = header;
-    this.isReady = true;
-    this.blockQueue.push(undefined, this.isReady);
+    console.log("resolve ", txList.length, " pending reqs, exiting...");
+  } else {
+    console.log("no pending req, exiting...");
   }
 }
 
@@ -206,7 +192,6 @@ async function main() {
   );
 
   const storage = await loadL2Storage();
-  const queue = new TransactionQueue(client, storage);
 
   for (let config of MonitorETHConfig.filter((config: any) => config.enable)) {
     const bridge = await abi.getBridge(ETHConfig[config.chainName](Secrets), false);
@@ -216,30 +201,18 @@ async function main() {
   console.log("getBridge");
 
   await client.init();
-  await client.subscribe((header) => queue.handleBlock(header));
 
-  const txMap = await client.getPendingReqMap();
-  const txList = Array.from(txMap.entries())
-    .map((kv: any) => [dataToBN(kv[0]), kv[1]])
-    .sort((kv1: any, kv2: any) => kv1[0] - kv2[0]);
-  console.log("pending req length", txList.length);
-
-  const lastRid = (await (await client.getAPI()).query.swapModule.reqIndex()).toString();
-  console.log("last req id", lastRid);
-
-  const commitedRid =
-    txList.length === 0
-    ? new BN(lastRid, 10)
-    : new BN(txList[0][0].toString(), 10).subn(1);
-
-  console.log("checkout db snapshot to", commitedRid.toString(10));
-  await storage.loadSnapshot(commitedRid.toString(10));
-
-  for (const kv of txList) {
-    await handlePendingReq(kv, storage);
+  try {
+    await handlePendingReqs(client, storage);
+  } catch (e) {
+    console.log("catch an exception, ", e);
   }
 
-  queue.setStartHeader(client.lastHeader);
+  for (const bridge of bridgeInfos) {
+    await bridge.bridge.close();
+  }
+  await storage.closeDb();
+  await client.close();
 }
 
 main();
