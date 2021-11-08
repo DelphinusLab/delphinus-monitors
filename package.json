@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "start": "node build/src/index.js"
+    "start": "node build/src/index.js",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.0",
