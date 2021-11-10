@@ -1,4 +1,4 @@
-const EthSubscriber = require("web3subscriber/syncdb");
+const EthSubscriber = require("web3subscriber/src/syncdb");
 const EthConfig = require('solidity/clients/config.js');
 const Secrets = require('solidity/.secrets.json');
 

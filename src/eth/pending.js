@@ -1,6 +1,6 @@
 const Web3 = require("web3");
 const FileSys = require("fs");
-const EthSubscriber = require("web3subscriber/syncdb");
+const EthSubscriber = require("web3subscriber/src/syncdb");
 const EthConfig = require('solidity/clients/config.js');
 const substrateNode = require('../../config/substrate-node.json');
 const substrateClient = require('../substrate/client');
