@@ -16,11 +16,11 @@ const tokenIndex = require("solidity/clients/token-index.json");
 const Secrets = require('solidity/.secrets.json');
 const BridgeJSON = require('solidity/build/contracts/Bridge.json');
 
-let config = EthConfig[process.argv[2]](Secrets);
+let config = EthConfig.EthConfig[process.argv[2]](Secrets);
 console.log("config:", config);
 
 let charge_address = RioTokenInfo.networks[config.device_id].address;
-let encoded_charge_address = "0x" + bridge.encodeL1Address(charge_address.substring(2), config.device_id).toString(16);
+let encoded_charge_address = "0x" + bridge.encodeL1address(charge_address.substring(2), config.device_id).toString(16);
 
 console.log("encoded charge address is", encoded_charge_address);
 

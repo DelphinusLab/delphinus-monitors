@@ -1,16 +1,16 @@
 import BN from "bn.js";
 import substrateNode from "../../config/substrate-node.json";
 import { SubstrateClient } from "./client";
-import { EventQueue } from "./event-queue";
 import { L2Ops } from "./enums";
 import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
 import { runZkp } from "delphinus-zkp/src/zokrates/main";
 import { Field } from "delphinus-curves/src/field";
 import { bridgeInfos, registerBridge } from "./bridges";
+import { EthConfig } from "solidity/clients/config";
+import { Bridge } from "solidity/clients/bridge/bridge";
 
 const MonitorETHConfig: any = require("../../config/eth-config.json");
-const ETHConfig: any = require("solidity/clients/config");
-const abi: any = require("solidity/clients/bridge/abi");
+
 /* We should using local secrets instead of debuggin secrets */
 const Secrets: any = require("solidity/.secrets.json");
 
@@ -194,10 +194,11 @@ async function main() {
   const storage = await loadL2Storage();
 
   for (let config of MonitorETHConfig.filter((config: any) => config.enable)) {
-    const bridge = await abi.getBridge(
-      ETHConfig[config.chainName](Secrets),
+    const bridge = await new Bridge(
+      EthConfig[config.chainName](Secrets),
       false
     );
+    await bridge.init();
     registerBridge(config.chainName, bridge);
   }
 
