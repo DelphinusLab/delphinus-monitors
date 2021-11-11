@@ -146,3 +146,17 @@ export class SubstrateClient {
     await api.disconnect();
   }
 }
+
+export async function withL2Client<t>(
+  addr: string,
+  cb: (l2Client: SubstrateClient) => Promise<t>,
+  chainIdx: number | undefined
+): Promise<t> {
+  let l2Client = new SubstrateClient(addr, chainIdx);
+  await l2Client.init();
+  try {
+    return await cb(l2Client);
+  } finally {
+    await l2Client.close();
+  }
+}
