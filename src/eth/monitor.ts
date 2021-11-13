@@ -4,7 +4,7 @@ import {
   Deposit as DepositEventType,
   SwapAck as SwapAckEventType,
   WithDraw as WithDrawEventType,
-} from "solidity/clients/types/events";
+} from "solidity/clients/contracts/bridge";
 import { EthConfig } from "solidity/clients/config";
 
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
