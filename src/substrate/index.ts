@@ -5,8 +5,9 @@ import { L2Ops } from "./enums";
 import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
 import { runZkp } from "delphinus-zkp/src/zokrates/main";
 import { Field } from "delphinus-curves/src/field";
-import { withBridgeClient, Bridge } from "solidity/clients/bridge/bridge";
+import { withL1Client, L1Client } from "solidity/clients/client";
 import { EthConfig } from "solidity/clients/config";
+import { BridgeContract } from "solidity/clients/contracts/bridge";
 
 const MonitorETHConfig: any = require("../../config/eth-config.json");
 /* We should using local secrets instead of debuggin secrets */
@@ -24,13 +25,13 @@ async function withL2Storage<t>(cb: (_: L2Storage) => Promise<t>) {
   }
 }
 
-async function foreachL1Bridge<t>(
+async function foreachL1Client<t>(
   configs: any[],
-  cb: (bridge: Bridge) => Promise<t>
+  cb: (l1client: L1Client) => Promise<t>
 ) {
   configs.forEach(
     async (config: any) =>
-      await withBridgeClient(EthConfig[config.chainName](Secrets), false, cb)
+      await withL1Client(EthConfig[config.chainName](Secrets), false, cb)
   );
 }
 
@@ -51,17 +52,18 @@ const opsMap = new Map<L2Ops, CommandOp>([
 ]);
 
 async function verify(
-  bridge: Bridge,
+  l1client: L1Client,
   l2Account: string,
   command: BN[],
   proof: BN[],
   rid: BN,
   vid: number = 0
 ) {
-  console.log("start to send to:", bridge.getChainIdHex());
+  console.log("start to send to:", l1client.getChainIdHex());
   while (true) {
     let txhash = "";
     try {
+      let bridge = l1client.getBridgeContract();
       let metadata = await bridge.getMetaData();
       if (new BN(metadata.bridgeInfo.rid).gte(rid)) {
         return;
@@ -93,7 +95,7 @@ async function verify(
         if (e.message == "ESOCKETTIMEDOUT") {
           await new Promise((resolve) => setTimeout(resolve, 5000));
         } else if (e.message == "nonce too low") {
-          console.log("failed on:", bridge.getChainIdHex(), e.message); // not sure
+          console.log("failed on:", l1client.getChainIdHex(), e.message); // not sure
           return;
         } else {
           console.log("Unhandled exception during verify");
@@ -137,10 +139,10 @@ async function handleOp(
   console.log(proofBuffer);
   console.log("----- verify args -----");
 
-  foreachL1Bridge(
+  foreachL1Client(
     MonitorETHConfig.filter((config: any) => config.enable),
-    async (bridge: Bridge) => {
-      await verify(bridge, "", commandBuffer, proofBuffer, new BN(rid, 10));
+    async (l1client: L1Client) => {
+      await verify(l1client, "", commandBuffer, proofBuffer, new BN(rid, 10));
     }
   );
 
