@@ -2,35 +2,26 @@
 // 1. Create init token and pool
 // 2. TBD
 
-import { SubstrateClient } from "../substrate/client";
-
-import substrateNode from "../../config/substrate-node.json";
+import { SubstrateClient, withL2Client } from "../substrate/client";
 import L1TokenInfo from "solidity/clients/token-index.json";
-import BN from "bn.js";
 
 const tokenInfo = L1TokenInfo;
 
-function encodeGlobalTokenAddress(chainId: string, address: string) {
-    const _cid = new BN(chainId, 10);
-    const _address = new BN(address.replace(/0x/, ""), 16);
-    console.log( _cid.shln(160).add(_address));
-    return _cid.shln(160).add(_address);
-}
-
 async function main() {
-    const client = new SubstrateClient(
-        `${substrateNode["host"]}:${substrateNode.port}`, 3
-    );
-
+  await withL2Client(3, async (l2client: SubstrateClient) => {
     let nonce = 0;
 
     for (let i = 0; i < Object.entries(tokenInfo).length; i++) {
-        for (let j = i + 1; j < Object.entries(tokenInfo).length; j++) {
-            await client.send("addPool", Object.entries(tokenInfo)[i][1], Object.entries(tokenInfo)[j][1], nonce++);
-        }
+      for (let j = i + 1; j < Object.entries(tokenInfo).length; j++) {
+        await l2client.send(
+          "addPool",
+          Object.entries(tokenInfo)[i][1],
+          Object.entries(tokenInfo)[j][1],
+          nonce++
+        );
+      }
     }
-
-    await client.close();
+  });
 }
 
 main();

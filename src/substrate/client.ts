@@ -1,19 +1,20 @@
 import BN from "bn.js";
-
-import * as types from "./types.json";
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import { Keyring } from "@polkadot/api";
 import { AddressOrPair } from "@polkadot/api/types";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 
-const ss58 = require("substrate-ss58");
-const MonitorETHConfig = require("../../config/eth-config.json");
+import { EthConfigEnabled } from "delphinus-deployment/src/eth-config";
+import { SubstrateNodeConfig } from "delphinus-deployment/src/substrate-node";
+import * as types from "./types.json";
 
-const hexstr2bn = (hexstr:string) => {
-  console.assert(hexstr.substring(0,2) == "0x");
-  let r = new BN(hexstr.substring(2), 'hex');
+const ss58 = require("substrate-ss58");
+
+const hexstr2bn = (hexstr: string) => {
+  console.assert(hexstr.substring(0, 2) == "0x");
+  let r = new BN(hexstr.substring(2), "hex");
   return r;
-}
+};
 
 export class SubstrateClient {
   provider: WsProvider;
@@ -44,7 +45,8 @@ export class SubstrateClient {
       await cryptoWaitReady();
       const keyring = new Keyring({ type: "sr25519" });
       this.sudo = keyring.addFromUri(
-        MonitorETHConfig.filter((config: any) => config.chainId === this.idx)[0]?.L2account!
+        EthConfigEnabled.filter((config) => config.device_id === this.idx?.toString())[0]
+          ?.l2_account!
       );
       console.log("sudo is " + this.sudo.address);
       console.log("sudo Id is " + ss58.addressToAddressId(this.sudo.address));
@@ -61,7 +63,7 @@ export class SubstrateClient {
   }
 
   public async send(method: string, ...args: any[]) {
-    console.log("send "+ method);
+    console.log("send " + method);
 
     const api = await this.getAPI();
     const sudo = await this.getSudo();
@@ -104,20 +106,12 @@ export class SubstrateClient {
     );
   }
 
-  public async charge(
-    account: string,
-    amount: string = "0"
-  ) {
+  public async charge(account: string, amount: string = "0") {
     const api = await this.getAPI();
     const sudo = await this.getSudo();
     const accountId = ss58.addressToAddressId((sudo as any).address);
-    return this.send(
-      "charge",
-      account,
-      new BN(amount),
-    );
+    return this.send("charge", account, new BN(amount));
   }
-
 
   public async getPendingReqMap() {
     const api = await this.getAPI();
@@ -148,10 +142,10 @@ export class SubstrateClient {
 }
 
 export async function withL2Client<t>(
-  addr: string,
-  cb: (l2Client: SubstrateClient) => Promise<t>,
-  chainIdx: number | undefined
+  chainIdx: number | undefined,
+  cb: (l2Client: SubstrateClient) => Promise<t>
 ): Promise<t> {
+  let addr = `${SubstrateNodeConfig.address}:${SubstrateNodeConfig.port}`;
   let l2Client = new SubstrateClient(addr, chainIdx);
   await l2Client.init();
   try {

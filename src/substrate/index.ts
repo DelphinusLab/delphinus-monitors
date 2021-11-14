@@ -1,17 +1,11 @@
 import BN from "bn.js";
-import substrateNode from "../../config/substrate-node.json";
 import { SubstrateClient, withL2Client } from "./client";
 import { L2Ops } from "./enums";
 import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
 import { runZkp } from "delphinus-zkp/src/zokrates/main";
 import { Field } from "delphinus-curves/src/field";
 import { withL1Client, L1Client } from "solidity/clients/client";
-import { EthConfig } from "solidity/clients/config";
-import { BridgeContract } from "solidity/clients/contracts/bridge";
-
-const MonitorETHConfig: any = require("../../config/eth-config.json");
-/* We should using local secrets instead of debuggin secrets */
-const Secrets: any = require("solidity/.secrets.json");
+import { ChainConfig, EthConfigEnabled } from "delphinus-deployment/src/eth-config";
 
 const SECTION_NAME = "swapModule";
 
@@ -26,12 +20,12 @@ async function withL2Storage<t>(cb: (_: L2Storage) => Promise<t>) {
 }
 
 async function foreachL1Client<t>(
-  configs: any[],
+  configs: ChainConfig[],
   cb: (l1client: L1Client) => Promise<t>
 ) {
   configs.forEach(
-    async (config: any) =>
-      await withL1Client(EthConfig[config.chainName](Secrets), false, cb)
+    async (config: ChainConfig) =>
+      await withL1Client(config, false, cb)
   );
 }
 
@@ -140,7 +134,7 @@ async function handleOp(
   console.log("----- verify args -----");
 
   foreachL1Client(
-    MonitorETHConfig.filter((config: any) => config.enable),
+    EthConfigEnabled,
     async (l1client: L1Client) => {
       await verify(l1client, "", commandBuffer, proofBuffer, new BN(rid, 10));
     }
@@ -185,11 +179,10 @@ async function getPendingReqs(client: SubstrateClient) {
 
 async function main() {
   let txList = await withL2Client(
-    `${substrateNode["host"]}:${substrateNode.port}`,
+    undefined,
     async (l2Client: SubstrateClient) => {
       return await getPendingReqs(l2Client);
     },
-    undefined
   );
 
   console.log("pending req length", txList.length);

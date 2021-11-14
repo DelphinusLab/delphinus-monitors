@@ -1,4 +1,5 @@
-const EthSubscriber = require("web3subscriber/src/syncdb");
+import { EventTracker } from "web3subscriber/src/sync-pending-events";
+
 const EthConfig = require('solidity/clients/config.js');
 const Secrets = require('solidity/.secrets.json');
 
@@ -7,9 +8,9 @@ console.log("config:", config);
 
 const BridgeJSON = require(config.contracts + "/Bridge.json");
 
-let etracker = new EthSubscriber.EventTracker(config.device_id, BridgeJSON, config, (n,v) => {});
+let etracker = new EventTracker(config.device_id, BridgeJSON, config, (n,v) => {});
 
-etracker.reset_events().then(() => {
+etracker.resetEvents().then(() => {
   console.log("reset events done.");
   process.exit();
 });

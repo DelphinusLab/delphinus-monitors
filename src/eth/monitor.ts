@@ -5,12 +5,11 @@ import {
   SwapAck as SwapAckEventType,
   WithDraw as WithDrawEventType,
 } from "solidity/clients/contracts/bridge";
-import { EthConfig } from "solidity/clients/config";
+import { EthConfig } from "delphinus-deployment/src/eth-config";
 
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { Rio } from "./rio";
 
-const substrateNode = require("../../config/substrate-node.json");
 const tokenIndex = require("solidity/clients/token-index.json");
 /* We should using local secrets instead of debuggin secrets */
 const Secrets = require("solidity/.secrets.json");
@@ -21,9 +20,8 @@ console.log("config:", config);
 
 async function withL2Client(cb: (l2Client: SubstrateClient) => Promise<void>) {
   return L2Client(
-    `${substrateNode.host}:${substrateNode.port}`,
-    cb,
     parseInt(config.device_id),
+    cb,
   );
 }
 
