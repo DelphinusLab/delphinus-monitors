@@ -5,7 +5,7 @@ import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
 import { runZkp } from "delphinus-zkp/src/zokrates/main";
 import { Field } from "delphinus-curves/src/field";
 import { withL1Client, L1Client } from "solidity/clients/client";
-import { ChainConfig, EthConfigEnabled } from "delphinus-deployment/src/config";
+import { EthConfigEnabled } from "delphinus-deployment/src/config";
 
 const SECTION_NAME = "swapModule";
 
@@ -17,16 +17,6 @@ async function withL2Storage<t>(cb: (_: L2Storage) => Promise<t>) {
   } finally {
     await l2Storage.closeDb();
   }
-}
-
-async function foreachL1Client<t>(
-  configs: ChainConfig[],
-  cb: (l1client: L1Client) => Promise<t>
-) {
-  configs.forEach(
-    async (config: ChainConfig) =>
-      await withL1Client(config, false, cb)
-  );
 }
 
 export function dataToBN(data: any) {
@@ -133,12 +123,11 @@ async function handleOp(
   console.log(proofBuffer);
   console.log("----- verify args -----");
 
-  foreachL1Client(
-    EthConfigEnabled,
-    async (l1client: L1Client) => {
-      await verify(l1client, "", commandBuffer, proofBuffer, new BN(rid, 10));
-    }
-  );
+  for (const config of EthConfigEnabled) {
+    await withL1Client(config, false, (l1client: L1Client) => {
+      return verify(l1client, "", commandBuffer, proofBuffer, new BN(rid, 10));
+    });
+  };
 
   console.log("before end snapshot", rid);
   await storage.endSnapshot();
@@ -193,7 +182,7 @@ async function main() {
 
   const commitedRid = new BN(txList[0][0].toString(), 10).subn(1);
 
-  withL2Storage(async (storage: L2Storage) => {
+  await withL2Storage(async (storage: L2Storage) => {
     console.log("checkout db snapshot to", commitedRid.toString(10));
     await storage.loadSnapshot(commitedRid.toString(10));
 

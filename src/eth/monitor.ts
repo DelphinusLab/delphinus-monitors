@@ -6,7 +6,7 @@ import {
   WithDraw as WithDrawEventType,
 } from "solidity/clients/contracts/bridge";
 import { EthConfigEnabled } from "delphinus-deployment/src/config";
-import { TokenIndex } from "delphinus-deployment/src/token-index";
+import { getTokenIndex } from "delphinus-deployment/src/token-index";
 
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { Rio } from "./rio";
@@ -15,6 +15,7 @@ const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 
 const config = EthConfigEnabled.find(config => config.chain_name === process.argv[2])!;
 console.log("config:", config);
+const tokenIndex = getTokenIndex();
 
 async function withL2Client(cb: (l2Client: SubstrateClient) => Promise<void>) {
   return L2Client(
@@ -39,7 +40,7 @@ async function handleDeposit(v: DepositEventType, hash: string) {
     console.log("nonce:", v.nonce);
     await l2Client.deposit(
       l2account,
-      TokenIndex[toDecStr(v.l1token)].toString(),
+      tokenIndex[toDecStr(v.l1token)].toString(),
       v.amount,
       hash
     );
