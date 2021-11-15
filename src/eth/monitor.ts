@@ -5,17 +5,15 @@ import {
   SwapAck as SwapAckEventType,
   WithDraw as WithDrawEventType,
 } from "solidity/clients/contracts/bridge";
-import { EthConfig } from "delphinus-deployment/src/eth-config";
+import { EthConfigEnabled } from "delphinus-deployment/src/config";
+import { TokenIndex } from "delphinus-deployment/src/token-index";
 
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { Rio } from "./rio";
 
-const tokenIndex = require("solidity/clients/token-index.json");
-/* We should using local secrets instead of debuggin secrets */
-const Secrets = require("solidity/.secrets.json");
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 
-const config = EthConfig[process.argv[2]](Secrets);
+const config = EthConfigEnabled.find(config => config.chain_name === process.argv[2])!;
 console.log("config:", config);
 
 async function withL2Client(cb: (l2Client: SubstrateClient) => Promise<void>) {
@@ -41,7 +39,7 @@ async function handleDeposit(v: DepositEventType, hash: string) {
     console.log("nonce:", v.nonce);
     await l2Client.deposit(
       l2account,
-      tokenIndex[toDecStr(v.l1token)],
+      TokenIndex[toDecStr(v.l1token)].toString(),
       v.amount,
       hash
     );

@@ -4,8 +4,7 @@ import { Keyring } from "@polkadot/api";
 import { AddressOrPair } from "@polkadot/api/types";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 
-import { EthConfigEnabled } from "delphinus-deployment/src/eth-config";
-import { SubstrateNodeConfig } from "delphinus-deployment/src/substrate-node";
+import { EthConfigEnabled, SubstrateNodeConfig } from "delphinus-deployment/src/config";
 import * as types from "./types.json";
 
 const ss58 = require("substrate-ss58");

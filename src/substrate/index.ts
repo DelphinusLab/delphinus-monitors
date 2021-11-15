@@ -5,7 +5,7 @@ import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
 import { runZkp } from "delphinus-zkp/src/zokrates/main";
 import { Field } from "delphinus-curves/src/field";
 import { withL1Client, L1Client } from "solidity/clients/client";
-import { ChainConfig, EthConfigEnabled } from "delphinus-deployment/src/eth-config";
+import { ChainConfig, EthConfigEnabled } from "delphinus-deployment/src/config";
 
 const SECTION_NAME = "swapModule";
 
