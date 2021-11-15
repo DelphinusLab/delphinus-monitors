@@ -86,9 +86,12 @@ async function main() {
     }
   );
 
-  await etracker.syncEvents(false);
+  try {
+    await etracker.syncEvents(false);
+  } finally {
+    await etracker.close();
+  }
   console.log("exiting...");
-  etracker.close();
 }
 
 main();

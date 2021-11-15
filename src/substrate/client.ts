@@ -4,7 +4,7 @@ import { Keyring } from "@polkadot/api";
 import { AddressOrPair } from "@polkadot/api/types";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 
-import { EthConfigEnabled, SubstrateNodeConfig } from "delphinus-deployment/src/config";
+import { EthConfigAll, SubstrateNodeConfig } from "delphinus-deployment/src/config";
 import * as types from "./types.json";
 
 const ss58 = require("substrate-ss58");
@@ -44,7 +44,7 @@ export class SubstrateClient {
       await cryptoWaitReady();
       const keyring = new Keyring({ type: "sr25519" });
       this.sudo = keyring.addFromUri(
-        EthConfigEnabled.filter((config) => config.device_id === this.idx?.toString())[0]
+        EthConfigAll.filter((config) => config.device_id === this.idx?.toString())[0]
           ?.l2_account!
       );
       console.log("sudo is " + this.sudo.address);
