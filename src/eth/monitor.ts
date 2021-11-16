@@ -1,5 +1,8 @@
 import { toHexStr, toDecStr, toSS58 } from "web3subscriber/src/addresses";
-import { EventTracker } from "web3subscriber/src/sync-pending-events";
+import {
+  EventTracker,
+  withEventTracker,
+} from "web3subscriber/src/sync-pending-events";
 import {
   Deposit as DepositEventType,
   SwapAck as SwapAckEventType,
@@ -13,15 +16,14 @@ import { Rio } from "./rio";
 
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 
-const config = EthConfigEnabled.find(config => config.chain_name === process.argv[2])!;
+const config = EthConfigEnabled.find(
+  (config) => config.chain_name === process.argv[2]
+)!;
 console.log("config:", config);
 const tokenIndex = getTokenIndex();
 
 async function withL2Client(cb: (l2Client: SubstrateClient) => Promise<void>) {
-  return L2Client(
-    parseInt(config.device_id),
-    cb,
-  );
+  return L2Client(parseInt(config.device_id), cb);
 }
 
 async function handleCharge(v: DepositEventType) {
@@ -75,7 +77,7 @@ const handlers = {
 };
 
 async function main() {
-  let etracker = new EventTracker(
+  await withEventTracker(
     config.device_id,
     BridgeJSON,
     config.ws_source,
@@ -83,14 +85,11 @@ async function main() {
     config.mongodb_url,
     async (eventName: string, v: any, hash: string) => {
       return (handlers as any)[eventName](v, hash);
+    },
+    (eventTracker: EventTracker) => {
+      return eventTracker.syncEvents(false);
     }
   );
-
-  try {
-    await etracker.syncEvents(false);
-  } finally {
-    await etracker.close();
-  }
   console.log("exiting...");
 }
 
