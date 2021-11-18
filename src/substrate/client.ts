@@ -4,8 +4,9 @@ import { Keyring } from "@polkadot/api";
 import { AddressOrPair } from "@polkadot/api/types";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 
-import { EthConfigAll, SubstrateNodeConfig } from "delphinus-deployment/src/config";
+import { getConfigByChainId, getSubstrateNodeConfig } from "delphinus-deployment/src/config";
 import * as types from "./types.json";
+import { L1ClientRole } from "delphinus-deployment/src/types";
 
 const ss58 = require("substrate-ss58");
 
@@ -44,8 +45,7 @@ export class SubstrateClient {
       await cryptoWaitReady();
       const keyring = new Keyring({ type: "sr25519" });
       this.sudo = keyring.addFromUri(
-        EthConfigAll.filter((config) => config.device_id === this.idx?.toString())[0]
-          ?.l2_account!
+        (await getConfigByChainId(L1ClientRole.Monitor, this.idx!.toString())).l2Account
       );
       console.log("sudo is " + this.sudo.address);
       console.log("sudo Id is " + ss58.addressToAddressId(this.sudo.address));
@@ -144,7 +144,8 @@ export async function withL2Client<t>(
   chainIdx: number | undefined,
   cb: (l2Client: SubstrateClient) => Promise<t>
 ): Promise<t> {
-  let addr = `${SubstrateNodeConfig.address}:${SubstrateNodeConfig.port}`;
+  let substrateNodeConfig = await getSubstrateNodeConfig();
+  let addr = `${substrateNodeConfig.address}:${substrateNodeConfig.port}`;
   let l2Client = new SubstrateClient(addr, chainIdx);
   await l2Client.init();
   try {

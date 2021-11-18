@@ -5,7 +5,8 @@ import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
 import { runZkp } from "delphinus-zkp/src/zokrates/main";
 import { Field } from "delphinus-curves/src/field";
 import { withL1Client, L1Client } from "solidity/clients/client";
-import { EthConfigEnabled } from "delphinus-deployment/src/config";
+import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
+import { L1ClientRole } from "delphinus-deployment/src/types";
 
 const SECTION_NAME = "swapModule";
 
@@ -123,7 +124,7 @@ async function handleOp(
   console.log(proofBuffer);
   console.log("----- verify args -----");
 
-  for (const config of EthConfigEnabled) {
+  for (const config of (await getEnabledEthConfigs(L1ClientRole.Monitor))) {
     await withL1Client(config, false, (l1client: L1Client) => {
       return verify(l1client, "", commandBuffer, proofBuffer, new BN(rid, 10));
     });

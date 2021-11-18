@@ -1,18 +1,22 @@
 import { EventTracker } from "web3subscriber/src/sync-pending-events";
-import { EthConfigEnabled } from "delphinus-deployment/src/config";
+import { getConfigByChainName } from "delphinus-deployment/src/config";
+import { L1ClientRole } from "delphinus-deployment/src/types";
 
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 
 async function main() {
-  const config = EthConfigEnabled.find(config => config.chain_name === process.argv[2])!;
+  const config = await getConfigByChainName(
+    L1ClientRole.Monitor,
+    process.argv[2]
+  );
   console.log("config:", config);
 
   let etracker = new EventTracker(
-    config.device_id,
+    config.deviceId,
     BridgeJSON,
-    config.ws_source,
-    config.monitor_account,
-    config.mongodb_url,
+    config.wsSource,
+    config.monitorAccount,
+    config.mongodbUrl,
     async (n, v, h) => {}
   );
 

@@ -8,22 +8,26 @@ import {
   SwapAck as SwapAckEventType,
   WithDraw as WithDrawEventType,
 } from "solidity/clients/contracts/bridge";
-import { EthConfigEnabled } from "delphinus-deployment/src/config";
+import { getConfigByChainId, getConfigByChainName } from "delphinus-deployment/src/config";
 import { getTokenIndex } from "delphinus-deployment/src/token-index";
 
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { Rio } from "./rio";
+import { L1ClientRole } from "delphinus-deployment/src/types";
 
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
-
-const config = EthConfigEnabled.find(
-  (config) => config.chain_name === process.argv[2]
-)!;
-console.log("config:", config);
 const tokenIndex = getTokenIndex();
 
+async function getConfig() {
+  return  await getConfigByChainName(
+    L1ClientRole.Monitor,
+    process.argv[2]
+  );
+}
+
 async function withL2Client(cb: (l2Client: SubstrateClient) => Promise<void>) {
-  return L2Client(parseInt(config.device_id), cb);
+  let config = await getConfig();
+  return L2Client(parseInt(config.deviceId), cb);
 }
 
 async function handleCharge(v: DepositEventType) {
@@ -60,34 +64,36 @@ async function handleAck(v: SwapAckEventType) {
   });
 }
 
-const handlers = {
-  Deposit: async (v: DepositEventType, hash: string) => {
-    if (toHexStr(v.l1token) == Rio.getChargeAddress(config.device_id)) {
-      await handleCharge(v);
-    } else {
-      await handleDeposit(v, hash);
-    }
-  },
-  WithDraw: async (v: WithDrawEventType, _hash: string) => {
-    await handleWithDraw(v);
-  },
-  SwapAck: async (v: SwapAckEventType, _hash: string) => {
-    await handleAck(v);
-  },
-};
-
 async function main() {
+  let config = await getConfig();
+
+  const handlers = {
+    Deposit: async (v: DepositEventType, hash: string) => {
+      if (toHexStr(v.l1token) == Rio.getChargeAddress(config.deviceId)) {
+        await handleCharge(v);
+      } else {
+        await handleDeposit(v, hash);
+      }
+    },
+    WithDraw: async (v: WithDrawEventType, _hash: string) => {
+      await handleWithDraw(v);
+    },
+    SwapAck: async (v: SwapAckEventType, _hash: string) => {
+      await handleAck(v);
+    },
+  };
+
   await withEventTracker(
-    config.device_id,
+    config.deviceId,
     BridgeJSON,
-    config.ws_source,
-    config.monitor_account,
-    config.mongodb_url,
+    config.wsSource,
+    config.monitorAccount,
+    config.mongodbUrl,
     async (eventName: string, v: any, hash: string) => {
       return (handlers as any)[eventName](v, hash);
     },
     (eventTracker: EventTracker) => {
-      return eventTracker.syncEvents(false);
+      return eventTracker.syncEvents();
     }
   );
   console.log("exiting...");
