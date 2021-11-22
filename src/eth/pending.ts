@@ -17,7 +17,6 @@ async function main() {
     config.wsSource,
     config.monitorAccount,
     config.mongodbUrl,
-    async (n, v, h) => {}
   );
 
   await etracker.subscribePendingEvents().then((v) => {

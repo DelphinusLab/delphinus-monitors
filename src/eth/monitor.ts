@@ -8,7 +8,10 @@ import {
   SwapAck as SwapAckEventType,
   WithDraw as WithDrawEventType,
 } from "solidity/clients/contracts/bridge";
-import { getConfigByChainId, getConfigByChainName } from "delphinus-deployment/src/config";
+import {
+  getConfigByChainId,
+  getConfigByChainName,
+} from "delphinus-deployment/src/config";
 import { getTokenIndex } from "delphinus-deployment/src/token-index";
 
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
@@ -19,10 +22,7 @@ const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 const tokenIndex = getTokenIndex();
 
 async function getConfig() {
-  return  await getConfigByChainName(
-    L1ClientRole.Monitor,
-    process.argv[2]
-  );
+  return await getConfigByChainName(L1ClientRole.Monitor, process.argv[2]);
 }
 
 async function withL2Client(cb: (l2Client: SubstrateClient) => Promise<void>) {
@@ -89,11 +89,12 @@ async function main() {
     config.wsSource,
     config.monitorAccount,
     config.mongodbUrl,
-    async (eventName: string, v: any, hash: string) => {
-      return (handlers as any)[eventName](v, hash);
-    },
     (eventTracker: EventTracker) => {
-      return eventTracker.syncEvents();
+      return eventTracker.syncEvents(
+        async (eventName: string, v: any, hash: string) => {
+          return (handlers as any)[eventName](v, hash);
+        }
+      );
     }
   );
   console.log("exiting...");
