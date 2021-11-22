@@ -8,10 +8,7 @@ import {
   SwapAck as SwapAckEventType,
   WithDraw as WithDrawEventType,
 } from "solidity/clients/contracts/bridge";
-import {
-  getConfigByChainId,
-  getConfigByChainName,
-} from "delphinus-deployment/src/config";
+import { getConfigByChainName } from "delphinus-deployment/src/config";
 import { getTokenIndex } from "delphinus-deployment/src/token-index";
 
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
@@ -27,7 +24,7 @@ async function getConfig() {
 
 async function withL2Client(cb: (l2Client: SubstrateClient) => Promise<void>) {
   let config = await getConfig();
-  return L2Client(parseInt(config.deviceId), cb);
+  return L2Client(config.l2Account, cb);
 }
 
 async function handleCharge(v: DepositEventType) {

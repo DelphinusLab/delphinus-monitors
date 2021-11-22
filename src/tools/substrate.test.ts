@@ -3,6 +3,8 @@
 // 2. TBD
 
 import { SubstrateClient, withL2Client } from "../substrate/client";
+import { getConfigByChainId } from "delphinus-deployment/src/config";
+import { L1ClientRole } from "delphinus-deployment/src/types";
 import L1TokenInfo from "solidity/build/contracts/Token.json";
 import BN from "bn.js";
 
@@ -19,7 +21,8 @@ const account = "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y";
 const l1Address = 1;
 
 async function main() {
-  await withL2Client(3, async (client: SubstrateClient) => {
+  const l2Account = (await getConfigByChainId(L1ClientRole.Monitor, "3")).l2Account;
+  await withL2Client(l2Account, async (client: SubstrateClient) => {
     let nonce = 0;
     let token = [];
 

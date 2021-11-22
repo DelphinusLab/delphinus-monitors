@@ -1,10 +1,13 @@
 import { Keyring } from "@polkadot/api";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
+import { getConfigByChainId, getEthConfigs } from "delphinus-deployment/src/config";
+import { L1ClientRole } from "delphinus-deployment/src/types";
 import { SubstrateClient, withL2Client } from "./client";
 
 async function main() {
   console.log("start");
-  await withL2Client(15, async (client: SubstrateClient) => {
+  const l2Account = (await getConfigByChainId(L1ClientRole.Monitor, "15")).l2Account;
+  await withL2Client(l2Account, async (client: SubstrateClient) => {
     await cryptoWaitReady();
     const keyring = new Keyring({ type: "sr25519" });
     const account = keyring.addFromUri("//Bob", {

@@ -4,6 +4,9 @@ import { L2Ops } from "./enums";
 import { handler as l1SyncHandler } from "./handler/l1sync";
 import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
 import { handler as eventRecorder } from "./handler/eventStorage";
+import { getLocalSubstrateNodeConfig } from "delphinus-deployment/src/local/substrate-node-config";
+import { L1ClientRole } from "delphinus-deployment/src/types";
+import { getLocalEthConfig } from "delphinus-deployment/src/local/eth-config";
 
 const SECTION_NAME = "swapModule";
 
@@ -69,7 +72,7 @@ async function getPendingReqs(client: SubstrateClient) {
 
 async function main() {
   let txList = await withL2Client(
-    undefined,
+    (await getLocalEthConfig(L1ClientRole.Monitor))[0].l2Account,
     async (l2Client: SubstrateClient) => {
       return await getPendingReqs(l2Client);
     }

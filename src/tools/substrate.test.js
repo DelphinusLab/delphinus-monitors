@@ -7,6 +7,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("../substrate/client");
+const config_1 = require("delphinus-deployment/src/config");
+const types_1 = require("delphinus-deployment/src/types");
 const Token_json_1 = __importDefault(require("solidity/build/contracts/Token.json"));
 const bn_js_1 = __importDefault(require("bn.js"));
 const tokenInfo = Token_json_1.default;
@@ -19,7 +21,8 @@ function encodeGlobalTokenAddress(chainId, address) {
 const account = "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y";
 const l1Address = 1;
 async function main() {
-    await (0, client_1.withL2Client)(3, async (client) => {
+    const l2Account = (await (0, config_1.getConfigByChainId)(types_1.L1ClientRole.Monitor, "3")).l2Account;
+    await (0, client_1.withL2Client)(l2Account, async (client) => {
         let nonce = 0;
         let token = [];
         for (const network of Object.entries(tokenInfo.networks).slice(0, 2)) {
