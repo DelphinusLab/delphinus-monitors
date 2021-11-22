@@ -16,6 +16,14 @@ const hexstr2bn = (hexstr: string) => {
   return r;
 };
 
+
+export function dataToBN(data: any) {
+  if (data.toHex) {
+    data = data.toHex();
+  }
+  return new BN(data.replace(/0x/, ""), 16);
+}
+
 export class SubstrateClient {
   provider: WsProvider;
   api?: ApiPromise;
