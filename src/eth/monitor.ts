@@ -39,14 +39,22 @@ async function handleCharge(v: DepositEventType) {
 }
 
 async function handleDeposit(v: DepositEventType, hash: string) {
+  const tokenAddr = toDecStr(v.l1token);
+  const l2account = toSS58(v.l2account);
+
+  if (tokenIndex[tokenAddr] === undefined) {
+    console.log("Untracked Token ", tokenAddr);
+    console.log("L1 may not be initialized, monitor exiting...");
+    process.exit(0);
+  }
+
   return withL2Client(async (l2Client: SubstrateClient) => {
-    let l2account = toSS58(v.l2account);
-    console.log("Deposit token_addr:", toHexStr(v.l1token));
+    console.log("Deposit token_addr:", tokenAddr);
     console.log("To l2 account:", l2account, " with amount: ", v.amount);
     console.log("nonce:", v.nonce);
     await l2Client.deposit(
       l2account,
-      tokenIndex[toDecStr(v.l1token)].toString(),
+      tokenIndex[tokenAddr].toString(),
       v.amount,
       hash
     );
