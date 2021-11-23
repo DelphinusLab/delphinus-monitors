@@ -1,5 +1,11 @@
 import BN from "bn.js";
-import { runZkp } from "delphinus-zkp/src/zokrates/main";
+import { readJSON, writeJSON, move } from "fs-extra";
+import path from "path";
+import {
+  Groth16Proof,
+  runZkp,
+  zkpProofToArray,
+} from "delphinus-zkp/src/zokrates/main";
 import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
 import { Field } from "delphinus-curves/src/field";
 import { withL1Client, L1Client } from "solidity/clients/client";
@@ -7,6 +13,35 @@ import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { dataToBN } from "../client";
 import { EventHandler } from "..";
+
+const ProofPath = path.resolve(__dirname, "..", "..", "..");
+
+function getProofPathOfRid(rid: string) {
+  return path.resolve(ProofPath, `${rid}.proof`);
+}
+
+async function tryReadCachedProof(
+  rid: string
+): Promise<Groth16Proof | undefined> {
+  const proofPath = getProofPathOfRid(rid);
+
+  try {
+    const proof = await readJSON(proofPath);
+    console.log("Read the proof of rid ", rid, " from ", proofPath);
+    return proof;
+  } catch {
+    return undefined;
+  }
+}
+
+async function cacheProof(rid: string, proof: Groth16Proof) {
+  const tmpProofPath = getProofPathOfRid("tmp");
+  const proofPath = getProofPathOfRid(rid);
+
+  /* Atomic writing */
+  await writeJSON(tmpProofPath, proof);
+  await move(tmpProofPath, proofPath);
+}
 
 async function withL2Storage<t>(cb: (_: L2Storage) => Promise<t>) {
   let l2Storage = new L2Storage();
@@ -85,24 +120,28 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
   await withL2Storage(async (storage: L2Storage) => {
     await storage.startSnapshot(rid);
 
-    /**
-     * TODO: we can save proof in the filesystem, thus
-     * recover interrupted rid can skip generating proof.
-     */
-    const proof = await runZkp(
-      new Field(op),
-      args.map((x) => new Field(dataToBN(x))),
-      storage
-    );
+    let proof = await tryReadCachedProof(rid);
+    if (!proof) {
+      proof = await runZkp(
+        new Field(op),
+        args.map((x) => new Field(dataToBN(x))),
+        storage
+      );
 
-    console.log(proof);
+      /* proof cannot be undefined since the default argument `runProof` of `runZkp` is true */
+      cacheProof(rid, proof!);
+    }
+
+    const proofArray = zkpProofToArray(proof!);
+
+    console.log(proofArray);
 
     const commandBuffer = [new BN(op)].concat(
       // Fill padding to 8
       args.concat(Array(8).fill(new BN(0))).slice(0, 8)
     );
 
-    const proofBuffer = proof.map(dataToBN);
+    const proofBuffer = proofArray.map(dataToBN);
 
     console.log("----- verify args -----");
     console.log(commandBuffer);
