@@ -1,8 +1,6 @@
 import { SubstrateClient, withL2Client } from "../substrate/client";
 import { getTokenIndex } from "delphinus-deployment/src/token-index";
-import { derive_private_key, get_public_key } from "delphinus-crypto";
 import { L1ClientRole } from "delphinus-deployment/src/types";
-import { SwapHelper } from "delphinus-l2-client-helper/src/swap";
 import { BN } from "bn.js";
 import { getLocalEthConfig } from "delphinus-deployment/src/local/eth-config";
 
@@ -17,10 +15,7 @@ async function main() {
   configs.forEach((config, i) => {
     withL2Client(config.l2Account, async (l2client: SubstrateClient) => {
       // 1. Set keys for all admin account
-      const derivedL2AccountPubKey = get_public_key(
-        l2client.swapHelper.privateKey
-      );
-      await l2client.swapHelper.setKey(derivedL2AccountPubKey);
+      await l2client.swapHelper.setKey();
 
       // 2. Add pools
       if (i === 0) {

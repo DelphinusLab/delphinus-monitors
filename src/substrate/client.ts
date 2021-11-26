@@ -4,11 +4,11 @@ import { Keyring } from "@polkadot/api";
 import { IKeyringPair } from "@polkadot/types/types";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 
-import { getConfigByChainId, getSubstrateNodeConfig } from "delphinus-deployment/src/config";
-import * as types from "delphinus-l2-client-helper/src/swap-types.json";
-import { L1ClientRole } from "delphinus-deployment/src/types";
+import { getSubstrateNodeConfig } from "delphinus-deployment/src/config";
 import { SwapHelper } from "delphinus-l2-client-helper/src/swap";
-import { derive_private_key } from "delphinus-crypto";
+
+import * as types from "delphinus-l2-client-helper/src/swap-types.json";
+import * as DelphinusCrypto from "delphinus-crypto/node/pkg";
 
 const ss58 = require("substrate-ss58");
 
@@ -37,7 +37,7 @@ export class SubstrateClient {
   account: string;
 
   constructor(addr: string,  account: string) {
-    this.swapHelper = new SwapHelper(account, this.send.bind(this));
+    this.swapHelper = new SwapHelper(account, this.send.bind(this), DelphinusCrypto);
     this.provider = new WsProvider(addr);
     this.account = account;
   }
