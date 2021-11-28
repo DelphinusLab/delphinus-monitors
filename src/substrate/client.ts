@@ -36,8 +36,9 @@ export class SubstrateClient {
   lock: boolean = false;
   account: string;
 
-  constructor(addr: string,  account: string) {
-    this.swapHelper = new SwapHelper(account, this.sendUntilFinalize.bind(this), DelphinusCrypto);
+  constructor(addr: string, account: string, sync = true) {
+    const s = sync ? this.sendUntilFinalize.bind(this) : this.send.bind(this);
+    this.swapHelper = new SwapHelper(account, s, DelphinusCrypto);
     this.provider = new WsProvider(addr);
     this.account = account;
   }
@@ -191,11 +192,12 @@ export class SubstrateClient {
 
 export async function withL2Client<t>(
   account: string,
-  cb: (l2Client: SubstrateClient) => Promise<t>
+  cb: (l2Client: SubstrateClient) => Promise<t>,
+  sync = false
 ): Promise<t> {
   let substrateNodeConfig = await getSubstrateNodeConfig();
   let addr = `${substrateNodeConfig.address}:${substrateNodeConfig.port}`;
-  let l2Client = new SubstrateClient(addr, account);
+  let l2Client = new SubstrateClient(addr, account, sync);
   await l2Client.init();
   try {
     return await cb(l2Client);

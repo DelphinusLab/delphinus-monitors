@@ -13,25 +13,29 @@ async function main() {
   }
 
   configs.forEach((config, i) => {
-    withL2Client(config.l2Account, async (l2client: SubstrateClient) => {
-      // 1. Set keys for all admin account
-      await l2client.swapHelper.setKey();
+    withL2Client(
+      config.l2Account,
+      async (l2client: SubstrateClient) => {
+        // 1. Set keys for all admin account
+        await l2client.swapHelper.setKey();
 
-      // 2. Add pools
-      if (i === 0) {
-        let nonce = 0;
-        const tokenIndex = getTokenIndex();
-        for (let i = 0; i < Object.entries(tokenIndex).length; i++) {
-          for (let j = i + 1; j < Object.entries(tokenIndex).length; j++) {
-            await l2client.swapHelper.addPool(
-              new BN(Object.entries(tokenIndex)[i][1]),
-              new BN(Object.entries(tokenIndex)[j][1]),
-              new BN(nonce++)
-            );
+        // 2. Add pools
+        if (i === 0) {
+          let nonce = 0;
+          const tokenIndex = getTokenIndex();
+          for (let i = 0; i < Object.entries(tokenIndex).length; i++) {
+            for (let j = i + 1; j < Object.entries(tokenIndex).length; j++) {
+              await l2client.swapHelper.addPool(
+                new BN(Object.entries(tokenIndex)[i][1]),
+                new BN(Object.entries(tokenIndex)[j][1]),
+                new BN(nonce++)
+              );
+            }
           }
         }
-      }
-    });
+      },
+      false
+    );
   });
 }
 
