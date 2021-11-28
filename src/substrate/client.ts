@@ -8,7 +8,7 @@ import { getSubstrateNodeConfig } from "delphinus-deployment/src/config";
 import { SwapHelper } from "delphinus-l2-client-helper/src/swap";
 
 import * as types from "delphinus-l2-client-helper/src/swap-types.json";
-import * as DelphinusCrypto from "delphinus-crypto/node/pkg";
+import * as DelphinusCrypto from "delphinus-crypto/node/pkg/delphinus_crypto";
 
 const ss58 = require("substrate-ss58");
 
@@ -37,7 +37,7 @@ export class SubstrateClient {
   account: string;
 
   constructor(addr: string,  account: string) {
-    this.swapHelper = new SwapHelper(account, this.send.bind(this), DelphinusCrypto);
+    this.swapHelper = new SwapHelper(account, this.sendUntilFinalize.bind(this), DelphinusCrypto);
     this.provider = new WsProvider(addr);
     this.account = account;
   }
@@ -143,11 +143,11 @@ export class SubstrateClient {
       return;
     }
 
-    const accountIndex = accountIndexOpt.value();
+    const accountIndex = accountIndexOpt.value;
 
     return await this.swapHelper.deposit(
       hexstr2bn(accountIndex.toHex()),
-      hexstr2bn(tokenIndex),
+      new BN(tokenIndex, 10),
       new BN(amount, 10),
       hexstr2bn(hash),
       hexstr2bn(l2nonce.toHex())
