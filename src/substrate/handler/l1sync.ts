@@ -121,11 +121,19 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
     await storage.startSnapshot(rid);
 
     let proof = await tryReadCachedProof(rid);
-    if (!proof) {
+    if (proof) {
+      await runZkp(
+        new Field(op),
+        args.map((x) => new Field(dataToBN(x))),
+        storage,
+        false
+      );
+    } else {
       proof = await runZkp(
         new Field(op),
         args.map((x) => new Field(dataToBN(x))),
-        storage
+        storage,
+        true
       );
 
       /* proof cannot be undefined since the default argument `runProof` of `runZkp` is true */
