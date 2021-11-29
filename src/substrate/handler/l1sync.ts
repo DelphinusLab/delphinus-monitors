@@ -5,14 +5,15 @@ import {
   Groth16Proof,
   runZkp,
   zkpProofToArray,
-} from "delphinus-zkp/src/zokrates/main";
-import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
+} from "delphinus-zkp/src/circom/main";
 import { Field } from "delphinus-curves/src/field";
 import { withL1Client, L1Client } from "solidity/clients/client";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { dataToBN } from "../client";
 import { EventHandler } from "..";
+import { L2Storage } from "delphinus-zkp/src/circom/address-space";
+import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 
 const ProofPath = path.resolve(__dirname, "..", "..", "..");
 
@@ -120,29 +121,22 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
   await withL2Storage(async (storage: L2Storage) => {
     await storage.startSnapshot(rid);
 
-    let proof = await tryReadCachedProof(rid);
-    if (proof) {
-      await runZkp(
+    let cachedProof = await tryReadCachedProof(rid);
+
+    let proof = await runZkp(
         new Field(op),
-        args.map((x) => new Field(dataToBN(x))),
+        [args[0], args.slice(1)].flat(1).map((x) => new Field(dataToBN(x))),
         storage,
-        false
-      );
-    } else {
-      proof = await runZkp(
-        new Field(op),
-        args.map((x) => new Field(dataToBN(x))),
-        storage,
-        true
+        !cachedProof
       );
 
-      /* proof cannot be undefined since the default argument `runProof` of `runZkp` is true */
+    if (cachedProof) {
+      proof = cachedProof;
+    } else {
       cacheProof(rid, proof!);
     }
 
     const proofArray = zkpProofToArray(proof!);
-
-    console.log(proofArray);
 
     const commandBuffer = [new BN(op)].concat(
       // Fill padding to 8
@@ -152,7 +146,7 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
     const proofBuffer = proofArray.map(dataToBN);
 
     console.log("----- verify args -----");
-    console.log(commandBuffer);
+    console.log(commandBuffer.map(x => x.toString()));
     console.log(proofBuffer);
     console.log("----- verify args -----");
 

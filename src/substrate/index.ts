@@ -2,11 +2,10 @@ import BN from "bn.js";
 import { dataToBN, SubstrateClient, withL2Client } from "./client";
 import { L2Ops } from "./enums";
 import { handler as l1SyncHandler } from "./handler/l1sync";
-import { CommandOp, L2Storage } from "delphinus-zkp/src/zokrates/command";
 import { handler as eventRecorder } from "./handler/eventStorage";
-import { getLocalSubstrateNodeConfig } from "delphinus-deployment/src/local/substrate-node-config";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getLocalEthConfig } from "delphinus-deployment/src/local/eth-config";
+import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 
 const SECTION_NAME = "swapModule";
 

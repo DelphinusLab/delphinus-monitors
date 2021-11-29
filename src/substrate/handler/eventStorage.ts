@@ -1,6 +1,6 @@
 import { BN } from "bn.js";
 import { getL2EventRecorderDbUri } from "delphinus-deployment/src/config";
-import { CommandOp } from "delphinus-zkp/src/zokrates/command";
+import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 import { DBHelper, withDBHelper } from "web3subscriber/src/dbhelper";
 import { EventHandler } from "..";
 
