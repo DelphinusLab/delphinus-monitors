@@ -16,6 +16,7 @@ const opsMap = new Map<L2Ops, CommandOp>([
   [L2Ops.PoolSupply, CommandOp.Supply],
   [L2Ops.PoolRetrieve, CommandOp.Retrieve],
   [L2Ops.AddPool, CommandOp.AddPool],
+  [L2Ops.SetKey, CommandOp.SetKey],
 ]);
 
 export interface EventHandler {
@@ -29,12 +30,14 @@ const l2EventHandlers = new Map<string, EventHandler>([
 ]);
 
 async function handleOp(rid: string, op: CommandOp, args: any[]) {
-  l2EventHandlers.forEach(async (handler, name) => {
+  for (let eh of l2EventHandlers) {
+    let name = eh[0];
+    let handler = eh[1];
     if (handler.eventHandler) {
       console.log("executing event handler ", name);
       await handler.eventHandler(rid, op, args);
     }
-  });
+  };
 }
 
 async function handlePendingReq(kv: any[]) {
@@ -42,7 +45,6 @@ async function handlePendingReq(kv: any[]) {
   const fn = (op: CommandOp, data: any[]) => handleOp(rid, op, data);
 
   console.log(`rid is ${rid}`);
-  console.log(kv[1].value.toString());
 
   if (kv[1].value.isWithdraw) {
     await fn(CommandOp.Withdraw, kv[1].value.asWithdraw);
@@ -56,7 +58,10 @@ async function handlePendingReq(kv: any[]) {
     await fn(CommandOp.Retrieve, kv[1].value.asPoolRetrieve);
   } else if (kv[1].value.isAddPool) {
     await fn(CommandOp.AddPool, kv[1].value.asAddPool);
+  } else if (kv[1].value.isSetKey) {
+    await fn(CommandOp.SetKey, kv[1].value.asSetKey);
   } else {
+    console.log("unhandled op");
     console.log(kv[1].value);
   }
 }
@@ -85,12 +90,14 @@ async function main() {
 
   const commitedRid = new BN(txList[0][0].toString(), 10).subn(1);
 
-  l2EventHandlers.forEach(async (handler, name) => {
+  for (let eh of l2EventHandlers) {
+    let name = eh[0];
+    let handler = eh[1];
     if (handler.preHandler) {
       console.log("executing pre handler ", name);
       await handler.preHandler(commitedRid);
     }
-  });
+  };
 
   for (const kv of txList) {
     await handlePendingReq(kv);

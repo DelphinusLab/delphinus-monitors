@@ -143,11 +143,12 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
       args.concat(Array(8).fill(new BN(0))).slice(0, 8)
     );
 
-    const proofBuffer = proofArray.map(dataToBN);
+    const proofBuffer = proofArray.map(x => new BN(x));
 
     console.log("----- verify args -----");
+    console.log(new BN(rid, 10).toString());
     console.log(commandBuffer.map(x => x.toString()));
-    console.log(proofBuffer);
+    console.log(proofBuffer.map(x => x.toString()));
     console.log("----- verify args -----");
 
     for (const config of await getEnabledEthConfigs(L1ClientRole.Monitor)) {
