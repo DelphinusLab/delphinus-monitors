@@ -27,12 +27,12 @@ export function dataToBN(data: any) {
 }
 
 export class SubstrateClient {
+  static nonce?: BN;
   swapHelper: SwapHelper;
   provider: WsProvider;
   api?: ApiPromise;
   sudo?: IKeyringPair;
   lastHeader?: any;
-  nonce?: BN;
   lock: boolean = false;
   account: string;
 
@@ -79,14 +79,14 @@ export class SubstrateClient {
     const sudo = await this.getSudo();
     const tx = api.tx.swapModule[method](...args);
 
-    if (this.nonce === undefined) {
-      this.nonce = new BN(
+    if (SubstrateClient.nonce === undefined) {
+      SubstrateClient.nonce = new BN(
         (await api.query.system.account((sudo as any).address)).nonce.toNumber()
       );
     }
 
-    const nonce = this.nonce;
-    this.nonce = nonce.addn(1);
+    const nonce = SubstrateClient.nonce;
+    SubstrateClient.nonce = nonce.addn(1);
 
     console.log("current nonce in send:", nonce);
     await tx.signAndSend(sudo, { nonce });
@@ -99,14 +99,14 @@ export class SubstrateClient {
     const sudo = await this.getSudo();
     const tx = api.tx.swapModule[method](...args);
 
-    if (this.nonce === undefined) {
-      this.nonce = new BN(
+    if (SubstrateClient.nonce === undefined) {
+      SubstrateClient.nonce = new BN(
         (await api.query.system.account((sudo as any).address)).nonce.toNumber()
       );
     }
 
-    const nonce = this.nonce;
-    this.nonce = nonce.addn(1);
+    const nonce = SubstrateClient.nonce;
+    SubstrateClient.nonce = nonce.addn(1);
 
     console.log("current nonce in send:", nonce);
 
