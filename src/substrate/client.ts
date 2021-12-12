@@ -27,7 +27,7 @@ export function dataToBN(data: any) {
 }
 
 export class SubstrateClient {
-  static nonce?: BN;
+  static nonce: Map<string, BN> = new Map();
   swapHelper: SwapHelper;
   provider: WsProvider;
   api?: ApiPromise;
@@ -72,44 +72,41 @@ export class SubstrateClient {
     }
   }
 
+  async getNonce() {
+    const api = await this.getAPI();
+    const sudo = await this.getSudo();
+
+    if (SubstrateClient.nonce.get(this.account) === undefined) {
+      SubstrateClient.nonce.set(this.account, new BN(
+        (await api.query.system.account((sudo as any).address)).nonce.toNumber()
+      ));
+    }
+
+    const nonce = SubstrateClient.nonce.get(this.account)!;
+    SubstrateClient.nonce.set(this.account, nonce.addn(1));
+
+    return nonce;
+  }
+
   public async send(method: string, ...args: any[]) {
     console.log("send " + method);
-
     const api = await this.getAPI();
     const sudo = await this.getSudo();
     const tx = api.tx.swapModule[method](...args);
-
-    if (SubstrateClient.nonce === undefined) {
-      SubstrateClient.nonce = new BN(
-        (await api.query.system.account((sudo as any).address)).nonce.toNumber()
-      );
-    }
-
-    const nonce = SubstrateClient.nonce;
-    SubstrateClient.nonce = nonce.addn(1);
+    const nonce = await this.getNonce();
 
     console.log("current nonce in send:", nonce);
     await tx.signAndSend(sudo, { nonce });
   }
 
   public async sendUntilFinalize(method: string, ...args: any[]) {
-    console.log("send " + method);
-
+    console.log("sendUntilFinalize " + method);
     const api = await this.getAPI();
     const sudo = await this.getSudo();
     const tx = api.tx.swapModule[method](...args);
-
-    if (SubstrateClient.nonce === undefined) {
-      SubstrateClient.nonce = new BN(
-        (await api.query.system.account((sudo as any).address)).nonce.toNumber()
-      );
-    }
-
-    const nonce = SubstrateClient.nonce;
-    SubstrateClient.nonce = nonce.addn(1);
+    const nonce = await this.getNonce();
 
     console.log("current nonce in send:", nonce);
-
     await new Promise(async (resolve, reject) => {
       const unsub = await tx.signAndSend(sudo, { nonce }, ({ events = [], status }) => {
         if (status.isFinalized) {
