@@ -117,16 +117,28 @@ async function verify(
   }
 }
 
+let batchSize = 10;
+let pendingEvents: [Field, Field[]][] = [];
+
 async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
+  pendingEvents.push([new Field(op), args.map(x => new Field(dataToBN(x)))]);
+
+  if (pendingEvents.length < batchSize) {
+    return;
+  }
+
+  const batchEvents = pendingEvents;
+  pendingEvents = [];
+
   await withL2Storage(async (storage: L2Storage) => {
     await storage.startSnapshot(rid);
 
     let cachedProof = await tryReadCachedProof(rid);
 
     let proof = await runZkp(
-        new Field(op),
-        [args[0], args.slice(1)].flat(1).map((x) => new Field(dataToBN(x))),
+        batchEvents,
         storage,
+        rid,
         !cachedProof
       );
 
