@@ -63,8 +63,7 @@ async function preHandler(commitedRid: BN) {
 
 async function verify(
   l1client: L1Client,
-  l2Account: string,
-  command: BN[],
+  command: number[],
   proof: BN[],
   rid: BN,
   vid: number = 0
@@ -75,7 +74,7 @@ async function verify(
     try {
       let bridge = l1client.getBridgeContract();
       let metadata = await bridge.getMetaData();
-      if (new BN(metadata.bridgeInfo.rid).gte(rid)) {
+      if (new BN(metadata.bridgeInfo.rid).gt(rid)) {
         return;
       }
 
@@ -89,7 +88,7 @@ async function verify(
        * 2. check if the rid exists in the db
        * 3. get hash from db, and check if it is pending in eth
        */
-      let tx = bridge.verify("0", command, proof, vid, 0, rid);
+      let tx = bridge.verify(command, proof, vid, rid);
       let r = await tx.when("Verify", "transactionHash", (hash: string) => {
         console.log("Get transactionHash", hash);
         txhash = hash;
@@ -149,12 +148,15 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
     }
 
     const proofArray = zkpProofToArray(proof!);
-
-    const commandBuffer = [new BN(op)].concat(
-      // Fill padding to 8
-      args.concat(Array(8).fill(new BN(0))).slice(0, 8)
-    );
-
+    const commandBuffer = batchEvents.map(
+      e => [
+        e[0].v.toArray('be', 1),
+        e[1][3].v.toArray('be', 8),
+        e[1][4].v.toArray('be', 4),
+        e[1][5].v.toArray('be', 4),
+        e[1][6].v.toArray('be', 32),
+        e[1][7].v.toArray('be', 32)
+      ]).flat(2);
     const proofBuffer = proofArray.map(x => new BN(x));
 
     console.log("----- verify args -----");
@@ -170,7 +172,7 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
           "",
           commandBuffer,
           proofBuffer,
-          new BN(rid, 10)
+          new BN(rid, 10).subn(batchSize)
         );
       });
     }
