@@ -21,7 +21,7 @@ async function main() {
 
         // 2. Add pools
         if (i === 0) {
-          let nonce = 0;
+          let nonce = 1;
           const tokenIndex = getTokenIndex();
           for (let i = 0; i < Object.entries(tokenIndex).length; i++) {
             for (let j = i + 1; j < Object.entries(tokenIndex).length; j++) {

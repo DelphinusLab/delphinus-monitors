@@ -169,7 +169,6 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
       await withL1Client(config, false, (l1client: L1Client) => {
         return verify(
           l1client,
-          "",
           commandBuffer,
           proofBuffer,
           new BN(rid, 10).subn(batchSize)
