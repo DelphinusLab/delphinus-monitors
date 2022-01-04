@@ -2,10 +2,10 @@ import { SubstrateClient, withL2Client } from "../substrate/client";
 import { getTokenIndex } from "delphinus-deployment/src/token-index";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { BN } from "bn.js";
-import { getLocalEthConfig } from "delphinus-deployment/src/local/eth-config";
+import { ethConfigbyRole } from "delphinus-deployment/config/eth-config";
 
 async function main() {
-  const configs = await getLocalEthConfig(L1ClientRole.Monitor);
+  const configs = await ethConfigbyRole (L1ClientRole.Monitor);
 
   if (configs.length === 0) {
     console.error("Error: No config detected.");
