@@ -4,7 +4,7 @@ import { L2Ops } from "./enums";
 import { handler as l1SyncHandler } from "./handler/l1sync";
 import { handler as eventRecorder } from "./handler/eventStorage";
 import { L1ClientRole } from "delphinus-deployment/src/types";
-import { ethConfigbyRole } from "delphinus-deployment/config/eth-config";
+import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 
 const SECTION_NAME = "swapModule";
@@ -76,7 +76,7 @@ async function getPendingReqs(client: SubstrateClient) {
 
 async function main() {
   let txList = await withL2Client(
-    (await ethConfigbyRole(L1ClientRole.Monitor))[0].l2Account,
+    (await getEnabledEthConfigs(L1ClientRole.Monitor))[0].l2Account,
     async (l2Client: SubstrateClient) => {
       return await getPendingReqs(l2Client);
     }
