@@ -28,7 +28,7 @@ export function dataToBN(data: any) {
 
 export class SubstrateClient {
   static nonce: Map<string, BN> = new Map();
-  swapHelper: SwapHelper;
+  swapHelper: SwapHelper<void>;
   provider: WsProvider;
   api?: ApiPromise;
   sudo?: IKeyringPair;
@@ -108,6 +108,7 @@ export class SubstrateClient {
 
     console.log("current nonce in send:", nonce);
     await new Promise(async (resolve, reject) => {
+      // TODO: handle error events
       const unsub = await tx.signAndSend(sudo, { nonce }, ({ events = [], status }) => {
         if (status.isFinalized) {
           events.forEach(({ phase, event: { data, method, section } }) => {
