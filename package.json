@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "start": "node build/src/index.js"
+    "start": "node build/src/index.js",
+    "prepare": "npx tsc"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.0",
@@ -16,8 +17,6 @@
   "dependencies": {
     "@polkadot/api": "4.5.1",
     "@polkadot/util-crypto": "^6.11.1",
-    "bignumber": "^1.1.0",
-    "bignumber.js": "^9.0.1",
     "bn.js": "^5.2.0",
     "bs58": "^4.0.1",
     "delphinus-zkp": "*",
@@ -29,6 +28,9 @@
     "ss58": "^1.0.2",
     "substrate-ss58": "^1.0.3",
     "web3": "^1.5.3",
-    "web3subscriber": "*"
+    "web3subscriber": "*",
+    "delphinus-deployment": "*",
+    "delphinus-crypto": "*",
+    "delphinus-l2-client-helper": "*"
   }
 }

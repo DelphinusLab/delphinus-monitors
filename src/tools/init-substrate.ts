@@ -1,36 +1,42 @@
-// Used to init substarte env by
-// 1. Create init token and pool
-// 2. TBD
-
-import { SubstrateClient } from "../substrate/client";
-
-import substrateNode from "../../config/substrate-node.json";
-import L1TokenInfo from "solidity/clients/token-index.json";
-import BN from "bn.js";
-
-const tokenInfo = L1TokenInfo;
-
-function encodeGlobalTokenAddress(chainId: string, address: string) {
-    const _cid = new BN(chainId, 10);
-    const _address = new BN(address.replace(/0x/, ""), 16);
-    console.log( _cid.shln(160).add(_address));
-    return _cid.shln(160).add(_address);
-}
+import { SubstrateClient, withL2Client } from "../substrate/client";
+import { getTokenIndex } from "delphinus-deployment/src/token-index";
+import { L1ClientRole } from "delphinus-deployment/src/types";
+import { BN } from "bn.js";
+import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 
 async function main() {
-    const client = new SubstrateClient(
-        `${substrateNode["host"]}:${substrateNode.port}`, 3
-    );
+  const configs = await getEnabledEthConfigs(L1ClientRole.Monitor);
 
-    let nonce = 0;
+  if (configs.length === 0) {
+    console.error("Error: No config detected.");
+    process.exit(-1);
+  }
 
-    for (let i = 0; i < Object.entries(tokenInfo).length; i++) {
-        for (let j = i + 1; j < Object.entries(tokenInfo).length; j++) {
-            await client.send("addPool", Object.entries(tokenInfo)[i][1], Object.entries(tokenInfo)[j][1], nonce++);
+  configs.forEach((config, i) => {
+    withL2Client(
+      config.l2Account,
+      async (l2client: SubstrateClient) => {
+        // 1. Set keys for all admin account
+        await l2client.swapHelper.setKey();
+
+        // 2. Add pools
+        if (i === 0) {
+          let nonce = 1;
+          const tokenIndex = getTokenIndex();
+          for (let i = 0; i < Object.entries(tokenIndex).length; i++) {
+            for (let j = i + 1; j < Object.entries(tokenIndex).length; j++) {
+              await l2client.swapHelper.addPool(
+                new BN(Object.entries(tokenIndex)[i][1]),
+                new BN(Object.entries(tokenIndex)[j][1]),
+                new BN(nonce++)
+              );
+            }
+          }
         }
-    }
-
-    await client.close();
+      },
+      false
+    );
+  });
 }
 
 main();
