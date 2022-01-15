@@ -4,24 +4,35 @@ import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 import { DBHelper, withDBHelper } from "web3subscriber/src/dbhelper";
 import { EventHandler } from "..";
 
-class EventRecorderDB extends DBHelper {
+export class EventRecorderDB extends DBHelper {
+  async drop() {
+    const collection = await this.getOrCreateEventCollection("l2_event");
+    await collection.drop();
+  }
+
   async saveEvent(rid: string, op: CommandOp, args: any[]) {
     const collection = await this.getOrCreateEventCollection("l2_event");
-    const argsPadding = args.concat(Array(8).fill(new BN(0))).slice(0, 8);
     const doc = {
       rid: rid,
       command: op,
-      arg0: argsPadding[0].toString(),
-      arg1: argsPadding[1].toString(),
-      arg2: argsPadding[2].toString(),
-      arg3: argsPadding[3].toString(),
-      arg4: argsPadding[4].toString(),
-      arg5: argsPadding[5].toString(),
-      arg6: argsPadding[6].toString(),
-      arg7: argsPadding[7].toString(),
+      args: args.map(x => x.toString())
     };
 
     await collection.insertOne(doc);
+  }
+
+  async loadEvents() {
+    const collection = await this.getOrCreateEventCollection("l2_event");
+    return (await collection.aggregate([{
+      "$group": {
+        "_id": "$rid",
+        "docs": {
+          "$first": "$$ROOT"
+        }
+      }
+    }]).toArray()).map(x => x.docs).sort(
+      (e1, e2) => new BN(e1.rid).sub(new BN(e2.rid)).isNeg() ? -1 : 1
+    );
   }
 }
 

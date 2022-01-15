@@ -55,10 +55,6 @@ async function withL2Storage<t>(cb: (_: L2Storage) => Promise<t>) {
 }
 
 async function preHandler(commitedRid: BN) {
-  await withL2Storage(async (storage: L2Storage) => {
-    console.log("checkout db snapshot to", commitedRid.toString(10));
-    await storage.loadSnapshot(commitedRid.toString(10));
-  });
 }
 
 async function verify(
@@ -116,7 +112,7 @@ async function verify(
   }
 }
 
-let batchSize = 10;
+export const batchSize = 10;
 let pendingEvents: [Field, Field[]][] = [];
 
 async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
@@ -130,21 +126,23 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
   pendingEvents = [];
 
   await withL2Storage(async (storage: L2Storage) => {
-    await storage.startSnapshot(rid);
+    let proof = await tryReadCachedProof(rid);
+    if (!proof) {
+      let lastRid = parseInt(rid) - batchSize;
+      console.log("checkout db snapshot to", lastRid.toString(10));
+      await withL2Storage(async (storage: L2Storage) => {
+        await storage.loadSnapshot(lastRid.toString(10));
+      });
 
-    let cachedProof = await tryReadCachedProof(rid);
-
-    let proof = await runZkp(
-        batchEvents,
-        storage,
-        rid,
-        !cachedProof
-      );
-
-    if (cachedProof) {
-      proof = cachedProof;
-    } else {
+      await storage.startSnapshot(rid);
+      proof = await runZkp(
+          batchEvents,
+          storage,
+          rid,
+          true
+        );
       cacheProof(rid, proof!);
+      await storage.endSnapshot();
     }
 
     const proofArray = zkpProofToArray(proof!);
@@ -175,10 +173,6 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
         );
       });
     }
-
-    console.log("before end snapshot", rid);
-    await storage.endSnapshot();
-    console.log("after end snapshot", rid);
   });
 }
 

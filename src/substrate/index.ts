@@ -6,18 +6,7 @@ import { handler as eventRecorder } from "./handler/eventStorage";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { CommandOp } from "delphinus-l2-client-helper/src/swap";
-
-const SECTION_NAME = "swapModule";
-
-const opsMap = new Map<L2Ops, CommandOp>([
-  [L2Ops.Deposit, CommandOp.Deposit],
-  [L2Ops.Withdraw, CommandOp.Withdraw],
-  [L2Ops.Swap, CommandOp.Swap],
-  [L2Ops.PoolSupply, CommandOp.Supply],
-  [L2Ops.PoolRetrieve, CommandOp.Retrieve],
-  [L2Ops.AddPool, CommandOp.AddPool],
-  [L2Ops.SetKey, CommandOp.SetKey],
-]);
+import { handleReq } from "./swapUtils";
 
 export interface EventHandler {
   preHandler?: (commitedRid: BN) => Promise<void>;
@@ -40,45 +29,11 @@ async function handleOp(rid: string, op: CommandOp, args: any[]) {
   };
 }
 
-async function handlePendingReq(kv: any[]) {
-  const rid = kv[0].toString();
-  const fn = (op: CommandOp, data: any[]) => handleOp(rid, op, data);
-
-  console.log(`rid is ${rid}`);
-
-  if (kv[1].value.isWithdraw) {
-    await fn(CommandOp.Withdraw, kv[1].value.asWithdraw);
-  } else if (kv[1].value.isDeposit) {
-    await fn(CommandOp.Deposit, kv[1].value.asDeposit);
-  } else if (kv[1].value.isSwap) {
-    await fn(CommandOp.Swap, kv[1].value.asSwap);
-  } else if (kv[1].value.isPoolSupply) {
-    await fn(CommandOp.Supply, kv[1].value.asPoolSupply);
-  } else if (kv[1].value.isPoolRetrieve) {
-    await fn(CommandOp.Retrieve, kv[1].value.asPoolRetrieve);
-  } else if (kv[1].value.isAddPool) {
-    await fn(CommandOp.AddPool, kv[1].value.asAddPool);
-  } else if (kv[1].value.isSetKey) {
-    await fn(CommandOp.SetKey, kv[1].value.asSetKey);
-  } else {
-    console.log("unhandled op");
-    console.log(kv[1].value);
-  }
-}
-
-async function getPendingReqs(client: SubstrateClient) {
-  /* transactions that havn't receive ack. */
-  const txMap = await client.getPendingReqMap();
-  return Array.from(txMap.entries())
-    .map((kv: any) => [dataToBN(kv[0]), kv[1]])
-    .sort((kv1: any, kv2: any) => kv1[0] - kv2[0]);
-}
-
 async function main() {
   let txList = await withL2Client(
     (await getEnabledEthConfigs(L1ClientRole.Monitor))[0].l2Account,
     async (l2Client: SubstrateClient) => {
-      return await getPendingReqs(l2Client);
+      return await l2Client.getPendingReqs();
     }
   );
 
@@ -100,7 +55,7 @@ async function main() {
   };
 
   for (const kv of txList) {
-    await handlePendingReq(kv);
+    await handleReq(kv, handleOp);
   }
 
   console.log("resolve ", txList.length, " pending reqs, exiting...");

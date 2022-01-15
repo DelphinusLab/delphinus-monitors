@@ -18,7 +18,6 @@ const hexstr2bn = (hexstr: string) => {
   return r;
 };
 
-
 export function dataToBN(data: any) {
   if (data.toHex) {
     data = data.toHex();
@@ -26,21 +25,12 @@ export function dataToBN(data: any) {
   return new BN(data.replace(/0x/, ""), 16);
 }
 
-export class SubstrateClient {
-  static nonce: Map<string, BN> = new Map();
-  swapHelper: SwapHelper<void>;
+export class SubstrateQueryClient {
   provider: WsProvider;
   api?: ApiPromise;
-  sudo?: IKeyringPair;
-  lastHeader?: any;
-  lock: boolean = false;
-  account: string;
 
-  constructor(addr: string, account: string, sync = true) {
-    const s = sync ? this.sendUntilFinalize.bind(this) : this.send.bind(this);
-    this.swapHelper = new SwapHelper(account, s, DelphinusCrypto);
+  constructor(addr: string) {
     this.provider = new WsProvider(addr);
-    this.account = account;
   }
 
   public async getAPI() {
@@ -51,6 +41,41 @@ export class SubstrateClient {
       });
     }
     return this.api;
+  }
+
+  public async close() {
+    const api = await this.getAPI();
+    await api.disconnect();
+  }
+
+  public async getCompleteReqMap() {
+    const api = await this.getAPI();
+    const rawMap = await api.query.swapModule.completeReqMap.entries();
+    const map = new Map(rawMap.map((kv) => [kv[0].args[0].toHex(), kv[1]]));
+    return map;
+  }
+
+  public async getCompleteReqs() {
+    const txMap = await this.getCompleteReqMap();
+    return Array.from(txMap.entries())
+      .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
+      .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
+  }
+}
+
+export class SubstrateClient extends SubstrateQueryClient {
+  static nonce: Map<string, BN> = new Map();
+  swapHelper: SwapHelper<void>;
+  sudo?: IKeyringPair;
+  lastHeader?: any;
+  lock: boolean = false;
+  account: string;
+
+  constructor(addr: string, account: string, sync = true) {
+    super(addr);
+    const s = sync ? this.sendUntilFinalize.bind(this) : this.send.bind(this);
+    this.swapHelper = new SwapHelper(account, s, DelphinusCrypto);
+    this.account = account;
   }
 
   public async getSudo() {
@@ -169,6 +194,13 @@ export class SubstrateClient {
     return map;
   }
 
+  public async getPendingReqs() {
+    const txMap = await this.getPendingReqMap();
+    return Array.from(txMap.entries())
+      .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
+      .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
+  }
+
   public async getEvents(header: any) {
     const api = await this.getAPI();
     const events = await api.query.system.events.at(header.hash);
@@ -181,22 +213,30 @@ export class SubstrateClient {
       cb(header);
     });
   }
-
-  public async close() {
-    const api = await this.getAPI();
-    await api.disconnect();
-  }
 }
 
-export async function withL2Client<t>(
+export async function withL2Client<T>(
   account: string,
-  cb: (l2Client: SubstrateClient) => Promise<t>,
+  cb: (l2Client: SubstrateClient) => Promise<T>,
   sync = false
-): Promise<t> {
+): Promise<T> {
   let substrateNodeConfig = await getSubstrateNodeConfig();
   let addr = `${substrateNodeConfig.address}:${substrateNodeConfig.port}`;
   let l2Client = new SubstrateClient(addr, account, sync);
   await l2Client.init();
+  try {
+    return await cb(l2Client);
+  } finally {
+    await l2Client.close();
+  }
+}
+
+export async function withL2QueryClient<T>(
+  cb: (l2Client: SubstrateQueryClient) => Promise<T>
+): Promise<T> {
+  let substrateNodeConfig = await getSubstrateNodeConfig();
+  let addr = `${substrateNodeConfig.address}:${substrateNodeConfig.port}`;
+  let l2Client = new SubstrateQueryClient(addr);
   try {
     return await cb(l2Client);
   } finally {
