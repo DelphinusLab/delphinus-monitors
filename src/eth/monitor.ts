@@ -91,7 +91,7 @@ async function main() {
   await withEventTracker(
     config.deviceId,
     BridgeJSON,
-    config.wsSource,
+    config.rpcSource,
     config.monitorAccount,
     config.mongodbUrl,
     (eventTracker: EventTracker) => {
