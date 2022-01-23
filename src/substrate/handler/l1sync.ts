@@ -7,13 +7,15 @@ import {
   zkpProofToArray,
 } from "delphinus-zkp/src/circom/main";
 import { Field } from "delphinus-curves/src/field";
-import { withL1Client, L1Client } from "solidity/clients/client";
+import { withL1Connection } from "solidity/clients/client";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { dataToBN } from "../client";
 import { EventHandler } from "..";
 import { L2Storage } from "delphinus-zkp/src/circom/address-space";
 import { CommandOp } from "delphinus-l2-client-helper/src/swap";
+import { BlockChainClient } from "web3subscriber/src/client";
+import { getBridgeContractConnection } from "solidity/clients/contracts/bridge";
 
 const ProofPath = path.resolve(__dirname, "..", "..", "..");
 
@@ -58,19 +60,19 @@ async function preHandler(commitedRid: BN) {
 }
 
 async function verify(
-  l1client: L1Client,
+  l1client: BlockChainClient,
   command: number[],
   proof: BN[],
   rid: BN,
   vid: number = 0
 ) {
-  console.log("start to send to:", l1client.getChainIdHex());
+  console.log("start to send to:", await l1client.getChainID());
   while (true) {
     let txhash = "";
     try {
-      let bridge = l1client.getBridgeContract();
-      let metadata = await bridge.getMetaData();
-      if (new BN(metadata.bridgeInfo.rid).gt(rid)) {
+      let bridge = await getBridgeContractConnection(l1client);
+      let bridgeInfo = await bridge.getBridgeInfo();
+      if (new BN(bridgeInfo.rid).gt(rid)) {
         return;
       }
 
@@ -100,7 +102,7 @@ async function verify(
         if (e.message == "ESOCKETTIMEDOUT") {
           await new Promise((resolve) => setTimeout(resolve, 5000));
         } else if (e.message == "nonce too low") {
-          console.log("failed on:", l1client.getChainIdHex(), e.message); // not sure
+          console.log("failed on:", l1client.getChainID(), e.message); // not sure
           return;
         } else {
           console.log("Unhandled exception during verify");
@@ -164,14 +166,14 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
     console.log("----- verify args -----");
 
     for (const config of await getEnabledEthConfigs(L1ClientRole.Monitor)) {
-      await withL1Client(config, false, (l1client: L1Client) => {
+      await withL1Connection(async (l1client: BlockChainClient) => {
         return verify(
           l1client,
           commandBuffer,
           proofBuffer,
           new BN(rid, 10).subn(batchSize)
         );
-      });
+      }, config);
     }
   });
 }
