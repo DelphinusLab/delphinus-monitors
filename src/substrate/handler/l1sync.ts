@@ -173,7 +173,7 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
           proofBuffer,
           new BN(rid, 10).subn(batchSize)
         );
-      }, config);
+      }, false, config);
     }
   });
 }
