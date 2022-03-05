@@ -178,11 +178,11 @@ export class SubstrateClient extends SubstrateQueryClient {
     );
   }
 
-  public async charge(account: string, amount: string = "0") {
+  public async charge(account: string, amount: string = "0", hash: string) {
     const api = await this.getAPI();
     const sudo = await this.getSudo();
     const accountId = ss58.addressToAddressId((sudo as any).address);
-    return this.send("charge", account, new BN(amount));
+    return this.send("charge", account, new BN(amount), hexstr2bn(hash));
   }
 
   public async getPendingReqMap() {
