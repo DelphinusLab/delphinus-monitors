@@ -27,11 +27,11 @@ async function withL2Client(cb: (l2Client: SubstrateClient) => Promise<void>) {
   return L2Client(config.l2Account, cb);
 }
 
-async function handleCharge(v: DepositEventType) {
+async function handleCharge(v: DepositEventType, hash: string) {
   return withL2Client(async (l2Client: SubstrateClient) => {
     let l2account = toSS58(v.l2account);
     console.log("Charge token_addr:", toHexStr(v.l1token));
-    await l2Client.charge(l2account, v.amount);
+    await l2Client.charge(l2account, v.amount, hash);
   });
 }
 
@@ -75,7 +75,7 @@ async function main() {
   const handlers = {
     Deposit: async (v: DepositEventType, hash: string) => {
       if (toHexStr(v.l1token) == Rio.getChargeAddress(config.deviceId)) {
-        await handleCharge(v);
+        await handleCharge(v, hash);
       } else {
         await handleDeposit(v, hash);
       }
