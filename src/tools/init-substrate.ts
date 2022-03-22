@@ -1,8 +1,19 @@
 import { SubstrateClient, withL2Client } from "../substrate/client";
+import { encodeL1address } from "web3subscriber/src/addresses";
 import { getTokenIndex } from "delphinus-deployment/src/token-index";
+import { Tokens } from "solidity/clients/contracts/tokenlist";
+import { extraTokens} from "delphinus-deployment/config/extratokens";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { BN } from "bn.js";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
+
+function crunchTokens() {
+  return Tokens.concat(extraTokens)
+    .filter((x: any) => x.address)
+    .map((x: any) => {return {...x,
+        address:encodeL1address(x.address, parseInt(x.chainId).toString(16))
+    }});
+}
 
 async function main() {
   const configs = await getEnabledEthConfigs(L1ClientRole.Monitor);
@@ -22,14 +33,20 @@ async function main() {
         // 2. Add pools
         if (i === 0) {
           let nonce = 1;
-          const tokenIndex = getTokenIndex();
-          for (let i = 0; i < Object.entries(tokenIndex).length; i++) {
-            for (let j = i + 1; j < Object.entries(tokenIndex).length; j++) {
-              await l2client.swapHelper.addPool(
-                new BN(Object.entries(tokenIndex)[i][1]),
-                new BN(Object.entries(tokenIndex)[j][1]),
-                new BN(nonce++)
-              );
+          const tokenIndexMap = getTokenIndex();
+          const tokens = crunchTokens();
+          for (let i = 0; i < tokens.length; i++) {
+            for (let j = i + 1; j < tokens.length; j++) {
+              if (tokens[i].name === tokens[j].name &&
+                    tokens[i].chainId !== tokens[j].chainId) {
+                console.log("pair:", tokens[i], tokens[j]);
+                let tx = await l2client.swapHelper.addPool(
+                  new BN(tokenIndexMap[tokens[i].address]),
+                  new BN(tokenIndexMap[tokens[j].address]),
+                  new BN(nonce++)
+                );
+                console.log(tx);
+              }
             }
           }
         }
