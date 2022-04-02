@@ -12,8 +12,8 @@ import { getConfigByChainName } from "delphinus-deployment/src/config";
 import { getTokenIndex } from "delphinus-deployment/src/token-index";
 
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
-import { Rio } from "./rio";
 import { L1ClientRole } from "delphinus-deployment/src/types";
+import { getChargeAddress } from "solidity/clients/client";
 
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 const tokenIndex = getTokenIndex();
@@ -74,7 +74,7 @@ async function main() {
 
   const handlers = {
     Deposit: async (v: DepositEventType, hash: string) => {
-      if (toHexStr(v.l1token) == Rio.getChargeAddress(config.deviceId)) {
+      if (toHexStr(v.l1token) == getChargeAddress(config.deviceId)) {
         await handleCharge(v, hash);
       } else {
         await handleDeposit(v, hash);

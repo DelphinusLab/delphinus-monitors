@@ -23,6 +23,7 @@ export class EventRecorderDB extends DBHelper {
 
   async loadEvents() {
     const collection = await this.getOrCreateEventCollection("l2_event");
+    // rid is suppose to match event(op)
     return (await collection.aggregate([{
       "$group": {
         "_id": "$rid",
@@ -33,6 +34,7 @@ export class EventRecorderDB extends DBHelper {
     }]).toArray()).map(x => x.docs).sort(
       (e1, e2) => new BN(e1.rid).sub(new BN(e2.rid)).isNeg() ? -1 : 1
     );
+
   }
 }
 
