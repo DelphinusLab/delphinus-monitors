@@ -12,12 +12,13 @@ async function main() {
 
     const uri = await getL2EventRecorderDbUri();
     await withDBHelper(
-        EventRecorderDB, uri,
+        EventRecorderDB, uri, "substrate",
         db => db.drop()
     );
 
     await withDBHelper(
-        EventRecorderDB, uri, async db => {
+        EventRecorderDB, uri, "substrate",
+        async db => {
             for (const e of events) {
                 await handleReq(e, async (rid, op, data) => await db.saveEvent.bind(db)(rid, op, data));
             }

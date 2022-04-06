@@ -11,14 +11,16 @@ export class EventRecorderDB extends DBHelper {
   }
 
   async saveEvent(rid: string, op: CommandOp, args: any[]) {
-    const collection = await this.getOrCreateEventCollection("l2_event");
-    const doc = {
-      rid: rid,
-      command: op,
-      args: args.map(x => x.toString())
-    };
-
-    await collection.insertOne(doc);
+    const collection = await this.getOrCreateEventCollection("l2_event", {"rid":1});
+    let r = await collection.findOne({rid: rid});
+    if (r === null) {
+      const doc = {
+        rid: rid,
+        command: op,
+        args: args.map(x => x.toString())
+      };
+      await collection.insertOne(doc);
+    }
   }
 
   async loadEvents() {
@@ -44,7 +46,7 @@ export class EventRecorderDB extends DBHelper {
 export async function eventRecorder(rid: string, op: CommandOp, args: any[]) {
   const uri = await getL2EventRecorderDbUri();
 
-  await withDBHelper(EventRecorderDB, uri, async (db: EventRecorderDB) => {
+  await withDBHelper(EventRecorderDB, uri, "substrate", async (db: EventRecorderDB) => {
     await db.saveEvent(rid, op, args);
   });
 }

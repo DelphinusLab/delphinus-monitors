@@ -25,7 +25,7 @@ async function main() {
     const storage = new L2Storage();
     const uri = await getL2EventRecorderDbUri();
     const events = await withDBHelper(
-        EventRecorderDB, uri,
+        EventRecorderDB, uri, "substrate",
         db => db.loadEvents()
     ) ?? [];
 
