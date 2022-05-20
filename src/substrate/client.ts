@@ -201,6 +201,24 @@ export class SubstrateClient extends SubstrateQueryClient {
       .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
   }
 
+
+  public async getCompleteReqMap() {
+    const api = await this.getAPI();
+    const rawMap = await api.query.swapModule.completeReqMap.entriesAt(
+      this.lastHeader.hash
+    );
+    const map = new Map(rawMap.map((kv) => [kv[0].args[0].toHex(), kv[1]]));
+    return map;
+  }
+
+  public async getCompleteReqs() {
+    const txMap = await this.getCompleteReqMap();
+    return Array.from(txMap.entries())
+      .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
+      .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
+  }
+
+
   public async getEvents(header: any) {
     const api = await this.getAPI();
     const events = await api.query.system.events.at(header.hash);
@@ -212,6 +230,12 @@ export class SubstrateClient extends SubstrateQueryClient {
     await api.rpc.chain.subscribeNewHeads((header) => {
       cb(header);
     });
+  }
+
+  public async getCompleteReqIndex() {
+    const api = await this.getAPI();
+    const complete_reqidx = await api.query.swapModule.completeReqIndex();
+    return complete_reqidx;
   }
 }
 

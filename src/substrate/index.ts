@@ -37,6 +37,25 @@ async function main() {
     }
   );
 
+  console.log("Pending Reqs:")
+  for (var tx of txList) {
+	  console.log("tx:", tx[0].toString());
+  }
+
+  let compTxList = await withL2Client(
+    (await getEnabledEthConfigs(L1ClientRole.Monitor))[0].l2Account,
+    async (l2Client: SubstrateClient) => {
+      return await l2Client.getCompleteReqs();
+    }
+  );
+
+  console.log("Completed Reqs:")
+  for (var tx of compTxList) {
+	  console.log("tx:", tx[0].toString());
+  }
+
+
+
   console.log("pending req length", txList.length);
   if (txList.length === 0) {
     console.log("no pending req, exiting...");
