@@ -1,8 +1,61 @@
 import { BN } from "bn.js";
 import { getL2EventRecorderDbUri } from "delphinus-deployment/src/config";
-import { CommandOp } from "delphinus-l2-client-helper/src/swap";
+import { CommandOp, commandName } from "delphinus-l2-client-helper/src/swap";
 import { DBHelper, withDBHelper } from "web3subscriber/src/dbhelper";
 import { EventHandler } from "..";
+
+type docType = {
+  rid: string,
+  command: CommandOp,
+  args: string[]
+}
+
+function parseEvent(doc: docType) {
+  // mongo db data format
+  let arg: {[key: string]: string} = {
+    "rid": "",
+    "command": "",
+    "arg0": "",
+    "arg1": "",
+    "arg2": "",
+    "arg3": "",
+    "arg4": "",
+    "arg5": "",
+    "arg6": "",
+    "arg7": "",
+    "arg8": "",
+    "arg9": "",
+    "sender": "",
+    "target": ""
+  };
+
+  arg.rid = doc.rid;
+  arg.command = commandName(doc.command);
+
+  for(let i=0; i<doc.args.length; i++) {
+    arg["arg" + i] = doc.args[i];
+  }
+  
+  if(doc.command === CommandOp.Deposit) {
+    arg.sender = doc.args[8];
+    arg.target = doc.args[4];
+  } else if (doc.command === CommandOp.Withdraw
+    || doc.command === CommandOp.SetKey) {
+    arg.sender = doc.args[4];
+    arg.target = doc.args[4];
+  } else if (doc.command === CommandOp.Swap
+    || doc.command === CommandOp.Retrieve
+    || doc.command === CommandOp.Supply
+  ) {
+    arg.sender = doc.args[4];
+    arg.target = doc.args[5];
+  } else if(doc.command === CommandOp.AddPool) {
+    arg.sender = doc.args[9];
+    arg.target = doc.args[8];
+  }
+  return arg;
+}
+
 
 export class EventRecorderDB extends DBHelper {
   async drop() {
@@ -19,7 +72,7 @@ export class EventRecorderDB extends DBHelper {
         command: op,
         args: args.map(x => x.toString())
       };
-      await collection.insertOne(doc);
+      await collection.insertOne(parseEvent(doc));
     }
   }
 
