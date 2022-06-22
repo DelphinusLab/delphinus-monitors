@@ -5,6 +5,7 @@ import { L1ClientRole } from "delphinus-deployment/src/types";
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 
 async function main() {
+/*
   const config = await getConfigByChainName(
     L1ClientRole.Monitor,
     process.argv[2]
@@ -22,6 +23,8 @@ async function main() {
   await etracker.subscribePendingEvents().then((v) => {
     console.log("start subscribe pending events:");
   });
+*/
+  throw Error("unimplement");
 }
 
 main();
