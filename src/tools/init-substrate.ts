@@ -1,14 +1,13 @@
 import { SubstrateClient, withL2Client } from "../substrate/client";
 import { encodeL1address } from "web3subscriber/src/addresses";
 import { getTokenIndex } from "delphinus-deployment/src/token-index";
-import { Tokens } from "solidity/clients/contracts/tokenlist";
-import { extraTokens} from "delphinus-deployment/config/extratokens";
+import { extraTokens, contractsInfo} from "delphinus-deployment/config/contractsinfo";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { BN } from "bn.js";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 
 function crunchTokens() {
-  return Tokens.concat(extraTokens)
+  return contractsInfo.tokens.concat(extraTokens)
     .filter((x: any) => x.address)
     .map((x: any) => {return {...x,
         address:encodeL1address(x.address, parseInt(x.chainId).toString(16))
