@@ -15,6 +15,8 @@ import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getChargeAddress } from "solidity/clients/client";
 
+import { sendAlert } from "../tools/alerts-bot";
+
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 const tokenIndex = getTokenIndex();
 
@@ -88,20 +90,25 @@ async function main() {
     },
   };
 
-  await withEventTracker(
-    config.deviceId,
-    BridgeJSON,
-    config.rpcSource,
-    config.monitorAccount,
-    config.mongodbUrl,
-    (eventTracker: EventTracker) => {
-      return eventTracker.syncEvents(
-        async (eventName: string, v: any, hash: string) => {
-          return (handlers as any)[eventName](v, hash);
-        }
-      );
-    }
-  );
+  try {
+    await withEventTracker(
+      config.deviceId,
+      BridgeJSON,
+      config.rpcSource,
+      config.monitorAccount,
+      config.mongodbUrl,
+      (eventTracker: EventTracker) => {
+        return eventTracker.syncEvents(
+          async (eventName: string, v: any, hash: string) => {
+            return (handlers as any)[eventName](v, hash);
+          }
+        );
+      }
+    );
+  } catch (e) {
+    sendAlert(e);
+    throw(e);
+  }
   console.log("exiting...");
 }
 
