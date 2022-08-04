@@ -8,7 +8,7 @@ import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 import { handleReq } from "./swapUtils";
 
-import { sendAlert } from "../tools/alerts-bot";
+import { sendAlert } from "web3subscriber/src/alerts-bot";
 
 export interface EventHandler {
   preHandler?: (commitedRid: BN) => Promise<void>;
@@ -79,7 +79,7 @@ async function main() {
     for (const kv of txList) {
       await handleReq(kv, handleOp);
     }
-    
+
     console.log("resolve ", txList.length, " pending reqs, exiting...");
   } catch(e) {
     sendAlert(e);
