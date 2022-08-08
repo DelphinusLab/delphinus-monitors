@@ -14,6 +14,7 @@ import { getTokenIndex } from "delphinus-deployment/src/token-index";
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getChargeAddress } from "solidity/clients/client";
+import { checkEthBalance } from "../tools/ethBalanceCheck/eth-balance-check";
 
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 const tokenIndex = getTokenIndex();
@@ -102,6 +103,10 @@ async function main() {
       );
     }
   );
+
+  const warningAmount = "1";
+  await checkEthBalance(config.rpcSource, config.monitorAccount, warningAmount);
+
   console.log("exiting...");
 }
 
