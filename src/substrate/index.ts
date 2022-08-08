@@ -8,7 +8,7 @@ import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 import { handleReq } from "./swapUtils";
 
-import { sendAlert } from "web3subscriber/src/alerts-bot";
+import { sendAlert } from "delphinus-slack-alert/src/index";
 
 export interface EventHandler {
   preHandler?: (commitedRid: BN) => Promise<void>;

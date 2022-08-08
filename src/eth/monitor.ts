@@ -15,7 +15,7 @@ import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getChargeAddress } from "solidity/clients/client";
 
-import { sendAlert } from "web3subscriber/src/alerts-bot";
+import { sendAlert } from "delphinus-slack-alert/src/index";
 
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 const tokenIndex = getTokenIndex();
