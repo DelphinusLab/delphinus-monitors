@@ -8,6 +8,7 @@ import { runZkp } from "delphinus-zkp/src/circom/main";
 import { withDBHelper } from "web3subscriber/src/dbhelper";
 import { EventRecorderDB } from "../substrate/handler/eventStorage";
 import { batchSize } from "../substrate/handler/l1sync";
+import { sendAlert } from "delphinus-slack-alert/src/index";
 
 async function main() {
     let treeDb = new MerkleTreeDb(local_uri, MerkleTree.dbName);
@@ -15,7 +16,9 @@ async function main() {
     for (const c of all_collections) {
         try {
             await treeDb.cb_on_db(db => db.dropCollection(c))
-        } catch {}
+        } catch (e) {
+            sendAlert(e);
+        }
     }
 
     await treeDb.closeMongoClient();
