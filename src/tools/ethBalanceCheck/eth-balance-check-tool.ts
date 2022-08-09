@@ -5,16 +5,14 @@ import { checkDeployerAccountBalance } from "./eth-balance-check"
 async function main(chainName: string, warningAmount: string) {
     console.log("start calling");
     const defaultWarningAmount = "1";
-    let checkInfo, Warning;
+    let checkInfo;
     let config = await getConfigByChainName(L1ClientRole.Monitor, chainName);
     if(warningAmount == undefined){
-      Warning =  defaultWarningAmount;
-    }else{
-      Warning =  warningAmount;
-    }
-    checkInfo =  await checkDeployerAccountBalance(config, Warning);
+      warningAmount =  defaultWarningAmount;
+    };
+    checkInfo =  await checkDeployerAccountBalance(config, warningAmount);
     if (!checkInfo[0]){
-      console.log("Congrats: Deployer's balance is More than WarningAmount(" + Warning + checkInfo[2] + ")");
+      console.log("Congrats: Deployer's balance is More than WarningAmount(" + warningAmount + checkInfo[2] + ")");
       console.log("Deployer's balance is: " + checkInfo[1] + checkInfo[2]);
     }
   }
