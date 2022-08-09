@@ -13,7 +13,7 @@ async function main(chainName: string, warningAmount: string) {
     checkInfo =  await checkDeployerAccountBalance(config, warningAmount);
     if (!checkInfo[0]){
       console.log("Congrats: Deployer's balance is More than WarningAmount(" + warningAmount + checkInfo[2] + ")");
-      console.log("Deployer's balance is: " + checkInfo[1] + checkInfo[2]);
+      console.log("Deployer's balance: " + checkInfo[1] + checkInfo[2]);
     }
   }
   

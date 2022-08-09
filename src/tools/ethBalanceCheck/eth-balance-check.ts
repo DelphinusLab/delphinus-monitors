@@ -13,10 +13,8 @@ export async function checkEthBalance(providerSource: string, privateKey: string
   let balanceWarning = false;
   let balance;
   const web3 = getWeb3FromSource(providerSource);
-  console.log("Deployer's privateKey: " + privateKey);
   const address = web3.eth.accounts.privateKeyToAccount(privateKey).address;
   const currencySymbol = getNativeCurrencySymbolByChainId(ChainId);
-  console.log("Deployer's address: " + address);
   await web3.eth.getBalance(address, function(err, result) {  
     if (err) {
       console.log(err)
@@ -24,8 +22,8 @@ export async function checkEthBalance(providerSource: string, privateKey: string
       balance = Web3.utils.fromWei(result, "ether");
       if (parseInt(balance, 10) < parseInt(warningAmount, 10)){
         balanceWarning = true;
-        console.log("Warning: Deployer's balance is less than " + warningAmount + currencySymbol);
-        console.log("Current balance: " + balance + currencySymbol);
+        console.log("Warning: Deployer's balance is less than WarningAmount(" + warningAmount + currencySymbol + ")");
+        console.log("Deployer's balance: " + balance + currencySymbol);
       }
     }
   });
