@@ -39,12 +39,12 @@ function getWeb3FromSource(provider: string) {
   }
 }
 
-async function getNativeCurrencySymbolByChainId(chainId: string){
+export async function getNativeCurrencySymbolByChainId(chainId: string){
   const chainInfo = await getChainInfoByChainID(chainId);
   return chainInfo.nativeCurrency.symbol;
 }
 
-async function getChainInfoByChainID(chainId:string) {
+export async function getChainInfoByChainID(chainId:string) {
   const fetch = require("node-fetch");
   const allConfigs = await (await fetch("https://chainid.network/chains.json")).json();
   let configInfo = await allConfigs.find((config:any) => config.chainId == parseInt(chainId));
