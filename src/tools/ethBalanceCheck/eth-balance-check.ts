@@ -30,7 +30,7 @@ export async function checkEthBalance(providerSource: string, privateKey: string
   return [balanceWarning, balance, currencySymbol]
 }
 
-function getWeb3FromSource(provider: string) {
+export function getWeb3FromSource(provider: string) {
   const HttpProvider = "https";
   if(provider.includes(HttpProvider)){
     return new Web3(new Web3.providers.HttpProvider(provider));
