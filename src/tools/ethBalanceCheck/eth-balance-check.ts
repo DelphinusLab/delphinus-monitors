@@ -14,7 +14,7 @@ export async function checkEthBalance(providerSource: string, privateKey: string
   let balance;
   const web3 = getWeb3FromSource(providerSource);
   const address = web3.eth.accounts.privateKeyToAccount(privateKey).address;
-  const currencySymbol = getNativeCurrencySymbolByChainId(ChainId);
+  const currencySymbol = await getNativeCurrencySymbolByChainId(ChainId);
   await web3.eth.getBalance(address, function(err, result) {  
     if (err) {
       console.log(err)
@@ -22,8 +22,8 @@ export async function checkEthBalance(providerSource: string, privateKey: string
       balance = Web3.utils.fromWei(result, "ether");
       if (parseInt(balance, 10) < parseInt(warningAmount, 10)){
         balanceWarning = true;
-        console.log("Warning: Deployer's balance is less than WarningAmount(" + warningAmount + currencySymbol + ")");
-        console.log("Deployer's balance: " + balance + currencySymbol);
+        console.log("Warning: Deployer's balance is less than WarningAmount(" + warningAmount + " " + currencySymbol + ")");
+        console.log("Deployer's balance: " + balance + " " + currencySymbol);
       }
     }
   });
@@ -39,14 +39,14 @@ function getWeb3FromSource(provider: string) {
   }
 }
 
-function getNativeCurrencySymbolByChainId(chainId: string){
-  if(chainId == "97"){
-    return " tBNB";
-  }else if(chainId == "3"){
-    return " ROP";
-  }else if (chainId == "338"){
-    return " TCRO";
-  }else{
-    return " Unkown Token"
-  }
+async function getNativeCurrencySymbolByChainId(chainId: string){
+  const chainInfo = await getChainInfoByChainID(chainId);
+  return chainInfo.nativeCurrency.symbol;
+}
+
+async function getChainInfoByChainID(chainId:string) {
+  const fetch = require("node-fetch");
+  const allConfigs = await (await fetch("https://chainid.network/chains.json")).json();
+  let configInfo = await allConfigs.find((config:any) => config.chainId == parseInt(chainId));
+  return configInfo;
 }
