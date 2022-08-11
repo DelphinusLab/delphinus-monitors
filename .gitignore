@@ -2,4 +2,3 @@ node_modules
 *.js
 *.js.map
 *.proof
-slack-alert-config.ts
