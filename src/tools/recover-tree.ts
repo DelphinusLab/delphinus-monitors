@@ -9,7 +9,7 @@ import { withDBHelper } from "web3subscriber/src/dbhelper";
 import { EventRecorderDB } from "../substrate/handler/eventStorage";
 import { batchSize } from "../substrate/handler/l1sync";
 import { sendAlert } from "delphinus-slack-alert/src/index";
-const { SlackConfig } = require("./slack-alert-config");
+const SlackConfi = require("./slack-alert-config");
 
 
 async function main() {
