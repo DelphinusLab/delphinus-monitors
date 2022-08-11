@@ -17,6 +17,7 @@ import { getChargeAddress } from "solidity/clients/client";
 import { checkEthBalance } from "../tools/ethBalanceCheck/eth-balance-check";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
+import { SlackConfig } from "./slack-alert-config";
 
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 const tokenIndex = getTokenIndex();
@@ -111,7 +112,7 @@ async function main() {
     await checkEthBalance(config.rpcSource, config.monitorAccount, warningAmount);
 
   } catch (e) {
-    sendAlert(e);
+    sendAlert(e, SlackConfig);
     throw(e);
   }
   console.log("exiting...");
