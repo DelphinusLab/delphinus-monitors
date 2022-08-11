@@ -9,6 +9,7 @@ import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 import { handleReq } from "./swapUtils";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
+const { SlackConfig } = require("../tools/slack-alert-config");
 
 export interface EventHandler {
   preHandler?: (commitedRid: BN) => Promise<void>;
@@ -82,7 +83,7 @@ async function main() {
 
     console.log("resolve ", txList.length, " pending reqs, exiting...");
   } catch(e) {
-    sendAlert(e);
+    sendAlert(e, SlackConfig);
     throw(e);
   }
 }

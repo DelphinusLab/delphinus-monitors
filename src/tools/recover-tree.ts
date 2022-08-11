@@ -9,6 +9,8 @@ import { withDBHelper } from "web3subscriber/src/dbhelper";
 import { EventRecorderDB } from "../substrate/handler/eventStorage";
 import { batchSize } from "../substrate/handler/l1sync";
 import { sendAlert } from "delphinus-slack-alert/src/index";
+const { SlackConfig } = require("./slack-alert-config");
+
 
 async function main() {
     let treeDb = new MerkleTreeDb(local_uri, MerkleTree.dbName);
@@ -17,7 +19,7 @@ async function main() {
         try {
             await treeDb.cb_on_db(db => db.dropCollection(c))
         } catch (e) {
-            sendAlert(e);
+            sendAlert(e, SlackConfig);
         }
     }
 
