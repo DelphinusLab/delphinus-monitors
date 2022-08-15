@@ -83,8 +83,7 @@ async function main() {
 
     console.log("resolve ", txList.length, " pending reqs, exiting...");
   } catch(e) {
-    sendAlert(e, SlackConfig);
-    throw(e);
+    sendAlert(e, SlackConfig, true);
   }
 }
 

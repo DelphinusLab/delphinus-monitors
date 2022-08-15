@@ -19,7 +19,7 @@ async function main() {
         try {
             await treeDb.cb_on_db(db => db.dropCollection(c))
         } catch (e) {
-            sendAlert(e, SlackConfig);
+            sendAlert(e, SlackConfig, true);
         }
     }
 

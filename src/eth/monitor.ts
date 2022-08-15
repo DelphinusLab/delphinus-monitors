@@ -112,8 +112,7 @@ async function main() {
     await checkEthBalance(config.rpcSource, config.monitorAccount, warningAmount);
 
   } catch (e) {
-    sendAlert(e, SlackConfig);
-    throw(e);
+    sendAlert(e, SlackConfig, true);
   }
   console.log("exiting...");
 }
