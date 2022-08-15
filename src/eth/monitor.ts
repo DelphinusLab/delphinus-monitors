@@ -14,7 +14,7 @@ import { getTokenIndex } from "delphinus-deployment/src/token-index";
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getChargeAddress } from "solidity/clients/client";
-import { checkEthBalance } from "../tools/ethBalanceCheck/eth-balance-check";
+import { checkDeployerAccountBalance } from "../tools/ethBalanceCheck/eth-balance-check";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
 const SlackConfig = require("../tools/slack-alert-config");
@@ -107,9 +107,9 @@ async function main() {
         );
       }
     );
-    
+  
     const warningAmount = "1";
-    await checkEthBalance(config.rpcSource, config.monitorAccount, warningAmount);
+    await checkDeployerAccountBalance(config, warningAmount);
 
   } catch (e) {
     sendAlert(e, SlackConfig, true);
