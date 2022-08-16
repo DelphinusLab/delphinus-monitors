@@ -9,7 +9,7 @@ import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 import { handleReq } from "./swapUtils";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
-const SlackConfig = require("../tools/slack-alert-config");
+const SlackConfig = require("../../slack-alert-config.json");
 
 export interface EventHandler {
   preHandler?: (commitedRid: BN) => Promise<void>;

@@ -17,7 +17,7 @@ import { getChargeAddress } from "solidity/clients/client";
 import { checkDeployerAccountBalance } from "../tools/ethBalanceCheck/eth-balance-check";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
-const SlackConfig = require("../tools/slack-alert-config");
+const SlackConfig = require("../../slack-alert-config.json");
 
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 const tokenIndex = getTokenIndex();
