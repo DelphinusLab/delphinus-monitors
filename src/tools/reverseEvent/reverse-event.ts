@@ -1,5 +1,7 @@
 import fs from "fs-extra";
 import { CommandOp } from "delphinus-l2-client-helper/src/swap";
+import { sendAlert } from "delphinus-slack-alert/src/index";
+const SlackConfig = require("../../../slack-alert-config.json");
 
 type docType = {
   rid: string,
@@ -65,9 +67,11 @@ async function runReverseEvent() {
     try {
       await fs.writeFile("./arguments.json", JSON.stringify(args, null, 4));
     } catch(err) {
+      sendAlert(err, SlackConfig, false);
       console.error("WriteFile Error: " + err);
     }
   } catch(err) {
+    sendAlert(err, SlackConfig, false);
     console.log("ReadJson Error: " + err);
   }
 }

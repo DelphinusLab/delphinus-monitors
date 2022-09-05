@@ -32,6 +32,7 @@
     "web3subscriber": "*",
     "delphinus-deployment": "*",
     "delphinus-crypto": "*",
-    "delphinus-l2-client-helper": "*"
+    "delphinus-l2-client-helper": "*",
+    "delphinus-slack-alert": "*"
   }
 }
