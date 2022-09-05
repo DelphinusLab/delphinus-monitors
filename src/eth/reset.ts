@@ -16,7 +16,8 @@ async function main() {
     BridgeJSON,
     config.wsSource,
     config.monitorAccount,
-    config.mongodbUrl
+    config.mongodbUrl,
+    config.syncEventsStep
   );
 
   await etracker.resetEvents();

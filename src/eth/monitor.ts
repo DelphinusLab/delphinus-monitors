@@ -95,6 +95,7 @@ async function main() {
     config.rpcSource,
     config.monitorAccount,
     config.mongodbUrl,
+    config.syncEventsStep,
     (eventTracker: EventTracker) => {
       return eventTracker.syncEvents(
         async (eventName: string, v: any, hash: string) => {
