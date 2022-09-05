@@ -16,6 +16,9 @@ import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getChargeAddress } from "solidity/clients/client";
 import { checkDeployerAccountBalance } from "../tools/ethBalanceCheck/eth-balance-check";
 
+import { sendAlert } from "delphinus-slack-alert/src/index";
+const SlackConfig = require("../../slack-alert-config.json");
+
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 const tokenIndex = getTokenIndex();
 
@@ -89,24 +92,28 @@ async function main() {
     },
   };
 
-  await withEventTracker(
-    config.deviceId,
-    BridgeJSON,
-    config.rpcSource,
-    config.monitorAccount,
-    config.mongodbUrl,
-    (eventTracker: EventTracker) => {
-      return eventTracker.syncEvents(
-        async (eventName: string, v: any, hash: string) => {
-          return (handlers as any)[eventName](v, hash);
-        }
-      );
-    }
-  );
+  try {
+    await withEventTracker(
+      config.deviceId,
+      BridgeJSON,
+      config.rpcSource,
+      config.monitorAccount,
+      config.mongodbUrl,
+      (eventTracker: EventTracker) => {
+        return eventTracker.syncEvents(
+          async (eventName: string, v: any, hash: string) => {
+            return (handlers as any)[eventName](v, hash);
+          }
+        );
+      }
+    );
+  
+    const warningAmount = "1";
+    await checkDeployerAccountBalance(config, warningAmount);
 
-  const warningAmount = "1";
-  await checkDeployerAccountBalance(config, warningAmount);
-
+  } catch (e) {
+    sendAlert(e, SlackConfig, true);
+  }
   console.log("exiting...");
 }
 

@@ -8,6 +8,9 @@ import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 import { handleReq } from "./swapUtils";
 
+import { sendAlert } from "delphinus-slack-alert/src/index";
+const SlackConfig = require("../../slack-alert-config.json");
+
 export interface EventHandler {
   preHandler?: (commitedRid: BN) => Promise<void>;
   eventHandler?: (rid: string, op: CommandOp, args: any[]) => Promise<void>;
@@ -30,54 +33,58 @@ async function handleOp(rid: string, op: CommandOp, args: any[]) {
 }
 
 async function main() {
-  let txList = await withL2Client(
-    (await getEnabledEthConfigs(L1ClientRole.Monitor))[0].l2Account,
-    async (l2Client: SubstrateClient) => {
-      return await l2Client.getPendingReqs();
+  try {
+    let txList = await withL2Client(
+      (await getEnabledEthConfigs(L1ClientRole.Monitor))[0].l2Account,
+      async (l2Client: SubstrateClient) => {
+        return await l2Client.getPendingReqs();
+      }
+    );
+
+    console.log("Pending Reqs:")
+    for (var tx of txList) {
+      console.log("tx:", tx[0].toString());
     }
-  );
 
-  console.log("Pending Reqs:")
-  for (var tx of txList) {
-	  console.log("tx:", tx[0].toString());
-  }
+    let compTxList = await withL2Client(
+      (await getEnabledEthConfigs(L1ClientRole.Monitor))[0].l2Account,
+      async (l2Client: SubstrateClient) => {
+        return await l2Client.getCompleteReqs();
+      }
+    );
 
-  let compTxList = await withL2Client(
-    (await getEnabledEthConfigs(L1ClientRole.Monitor))[0].l2Account,
-    async (l2Client: SubstrateClient) => {
-      return await l2Client.getCompleteReqs();
+    console.log("Completed Reqs:")
+    for (var tx of compTxList) {
+      console.log("tx:", tx[0].toString());
     }
-  );
-
-  console.log("Completed Reqs:")
-  for (var tx of compTxList) {
-	  console.log("tx:", tx[0].toString());
-  }
 
 
 
-  console.log("pending req length", txList.length);
-  if (txList.length === 0) {
-    console.log("no pending req, exiting...");
-    return;
-  }
-
-  const commitedRid = new BN(txList[0][0].toString(), 10).subn(1);
-
-  for (let eh of l2EventHandlers) {
-    let name = eh[0];
-    let handler = eh[1];
-    if (handler.preHandler) {
-      console.log("executing pre handler ", name);
-      await handler.preHandler(commitedRid);
+    console.log("pending req length", txList.length);
+    if (txList.length === 0) {
+      console.log("no pending req, exiting...");
+      return;
     }
-  };
 
-  for (const kv of txList) {
-    await handleReq(kv, handleOp);
+    const commitedRid = new BN(txList[0][0].toString(), 10).subn(1);
+
+    for (let eh of l2EventHandlers) {
+      let name = eh[0];
+      let handler = eh[1];
+      if (handler.preHandler) {
+        console.log("executing pre handler ", name);
+        await handler.preHandler(commitedRid);
+      }
+    };
+
+    for (const kv of txList) {
+      await handleReq(kv, handleOp);
+    }
+
+    console.log("resolve ", txList.length, " pending reqs, exiting...");
+  } catch(e) {
+    sendAlert(e, SlackConfig, true);
   }
-
-  console.log("resolve ", txList.length, " pending reqs, exiting...");
 }
 
 main();
