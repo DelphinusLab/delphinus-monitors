@@ -17,14 +17,18 @@ async function main(chainName: string, warningAmount: string) {
     }
 
     const configInfo = await getChainInfoByChainID(config.deviceId);
-    console.log("======================== Chain Info =========================");
-    console.log("Chain Name:", configInfo.name);
-    console.log("Chain ID:", configInfo.chainId);
-    console.log("Network ID:", configInfo.networkId);
-    console.log("INFO URL:", configInfo.infoURL);
-    console.log("Native Currency Name:", configInfo.nativeCurrency.name);
-    console.log("Native Currency symbol:", configInfo.nativeCurrency.symbol);
-    console.log("Native Currency decimals:", configInfo.nativeCurrency.decimals);
+    if(configInfo == undefined){
+      console.log("======================== Chain Info =========================");
+    }else{
+      console.log("======================== Chain Info =========================");
+      console.log("Chain Name:", configInfo.name);
+      console.log("Chain ID:", configInfo.chainId);
+      console.log("Network ID:", configInfo.networkId);
+      console.log("INFO URL:", configInfo.infoURL);
+      console.log("Native Currency Name:", configInfo.nativeCurrency.name);
+      console.log("Native Currency symbol:", configInfo.nativeCurrency.symbol);
+      console.log("Native Currency decimals:", configInfo.nativeCurrency.decimals);
+    }
   }
   
   main(process.argv[2], process.argv[3]).then(v => {process.exit();})
