@@ -41,7 +41,11 @@ export function getWeb3FromSource(provider: string) {
 
 export async function getNativeCurrencySymbolByChainId(chainId: string){
   const chainInfo = await getChainInfoByChainID(chainId);
-  return chainInfo.nativeCurrency.symbol;
+  if(chainInfo == undefined){
+    return "unknown token";
+  }else{
+    return chainInfo.nativeCurrency.symbol;
+  }
 }
 
 export async function getChainInfoByChainID(chainId:string) {
