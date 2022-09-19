@@ -4,7 +4,7 @@ import { L1ClientRole } from "delphinus-deployment/src/types";
 
 async function main() {
     const { writeFileSync } = require('fs');
-    const path = '../../../web3subscriber/blockNumberBeforeDeployment.json';
+    const path = '../../../../blockNumberBeforeDeployment.json';
     interface bnInfo {
         [key: string]: any
       }
