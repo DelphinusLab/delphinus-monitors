@@ -36,9 +36,7 @@ async function main() {
     writeFileSync(path, JSON.stringify(latestBlock,null,2), 'utf8');
     console.log("Latest Block Number has been generated");
   } catch (err) {
-    if(err != undefined){
-      console.log('An error has occurred ', err);
-    }
+    console.log('An error has occurred ', err);
   }
 }
 
