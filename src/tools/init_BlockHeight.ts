@@ -6,9 +6,7 @@ import { L1ClientRole } from "delphinus-deployment/src/types";
 async function main() {
   const path = '../../../../blockNumberBeforeDeployment.json';
   const { writeFileSync } = require('fs');
-  // if (!fs.existsSync(__dirname + '/../../../../../zkcross-lerna1')) {
-  //   throw console.error('error');
-  // }
+
   interface bnInfo {
     [key: string]: any
   }
@@ -19,26 +17,27 @@ async function main() {
     console.error("Error: No config detected.");
     process.exit(-1);
   }
+  if (!fs.existsSync(__dirname + '/../../../../../zkcross-lerna')) {
+    console.error('zkcross-lerna does not exist');
+    process.exit(-1);
+  }
+
   try {
-    if (!fs.existsSync(__dirname + '/../../../../../zkcross-lerna')) {
-      throw console.error('zkcross-lerna does not exist');
-    }
     for(let config of configs) {
       let web3 = getWeb3FromSource(config.rpcSource);
       await web3.eth.getBlockNumber(async function(err, result) {  
         if (err) {
-            console.log(err);
-            throw err;
+          throw err;
         } else {
-            latestBlock[config.deviceId] = result;
+          latestBlock[config.deviceId] = result;
         }
       });
     };
     writeFileSync(path, JSON.stringify(latestBlock,null,2), 'utf8');
     console.log("Latest Block Number has been generated");
-  } catch (error) {
-    if(error != undefined){
-      console.log('An error has occurred ', error);
+  } catch (err) {
+    if(err != undefined){
+      console.log('An error has occurred ', err);
     }
   }
 }
