@@ -109,7 +109,7 @@ async function main() {
       }
     );
   
-    const warningAmount = "1";
+    const warningAmount = config.gasWarningAmount;
     await checkDeployerAccountBalance(config, warningAmount);
 
   } catch (e) {

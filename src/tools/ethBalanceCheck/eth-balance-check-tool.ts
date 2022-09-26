@@ -4,11 +4,10 @@ import { checkDeployerAccountBalance, getChainInfoByChainID } from "./eth-balanc
 
 async function main(chainName: string, warningAmount: string) {
     console.log("start calling");
-    const defaultWarningAmount = "1";
     let checkInfo;
     const config = await getConfigByChainName(L1ClientRole.Monitor, chainName);
     if(warningAmount == undefined){
-      warningAmount =  defaultWarningAmount;
+      warningAmount =  config.gasWarningAmount;
     };
     checkInfo =  await checkDeployerAccountBalance(config, warningAmount);
     if (!checkInfo[0]){
