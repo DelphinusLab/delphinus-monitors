@@ -63,15 +63,15 @@ async function runReverseEvent() {
       let arg = reverseEvent(doc);
       args.push(arg);
     })
-
+ 
     try {
       await fs.writeFile("./arguments.json", JSON.stringify(args, null, 4));
     } catch(err) {
-      sendAlert(err, SlackConfig, false);
+      await sendAlert(err, SlackConfig, false);
       console.error("WriteFile Error: " + err);
     }
   } catch(err) {
-    sendAlert(err, SlackConfig, false);
+    await sendAlert(err, SlackConfig, false);
     console.log("ReadJson Error: " + err);
   }
 }
