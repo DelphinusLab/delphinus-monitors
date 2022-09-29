@@ -113,9 +113,11 @@ async function main() {
     await checkDeployerAccountBalance(config, warningAmount);
 
   } catch (e) {
-    sendAlert(e, SlackConfig, true);
+    await sendAlert(e, SlackConfig, true);
   }
   console.log("exiting...");
+
+  process.exit();
 }
 
 main();
