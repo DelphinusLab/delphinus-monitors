@@ -50,7 +50,7 @@ export async function getNativeCurrencySymbolByChainId(chainId: string){
 
 export async function getChainInfoByChainID(chainId:string) {
   const fetch = require("node-fetch");
-  const allConfigs = await (await fetch("https://chainid.network/chains.json")).json();
+  const allConfigs = await (await fetch("https://chainid.network/chains.json", {timeout:10000})).json();
   let configInfo = await allConfigs.find((config:any) => config.chainId == parseInt(chainId));
   return configInfo;
 }
