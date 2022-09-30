@@ -60,12 +60,14 @@ export async function getChainInfoByChainID(chainId:string) {
 export async function getGasWarningAmount(chainName:string, setWarningAmount?:string) { 
   // Default warning amount
   let warningAmount = "1";
+  if(setWarningAmount && !isNaN(Number(setWarningAmount))){
+    warningAmount = setWarningAmount;
+    return warningAmount ;
+  }
+  
   const config = await getConfigByChainName(L1ClientRole.Monitor, chainName);
   if(config.gasWarningAmount && !isNaN(Number(config.gasWarningAmount))){
     warningAmount = config.gasWarningAmount;
-  }
-  if(setWarningAmount && !isNaN(Number(setWarningAmount))){
-    warningAmount = setWarningAmount;
   }
   return warningAmount
 }
