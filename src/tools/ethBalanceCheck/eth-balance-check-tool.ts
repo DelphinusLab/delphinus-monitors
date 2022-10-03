@@ -1,18 +1,15 @@
 import { getConfigByChainName } from "delphinus-deployment/src/config";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { checkDeployerAccountBalance, getChainInfoByChainID } from "./eth-balance-check"
+import { getGasWarningAmount } from "./eth-balance-check";
 
-async function main(chainName: string, warningAmount: string) {
+async function main(chainName: string, warningAmount?: string) {
     console.log("start calling");
-    const defaultWarningAmount = "1";
-    let checkInfo;
     const config = await getConfigByChainName(L1ClientRole.Monitor, chainName);
-    if(warningAmount == undefined){
-      warningAmount =  defaultWarningAmount;
-    };
-    checkInfo =  await checkDeployerAccountBalance(config, warningAmount);
+    const gasWarningAmount =  await getGasWarningAmount(chainName, warningAmount);
+    const checkInfo =  await checkDeployerAccountBalance(config, gasWarningAmount);
     if (!checkInfo[0]){
-      console.log("Congrats: Deployer's balance is More than WarningAmount(" + warningAmount + " " + checkInfo[2] + ")");
+      console.log("Congrats: Deployer's balance is More than WarningAmount(" + gasWarningAmount + " " + checkInfo[2] + ")");
       console.log("Deployer's balance: " + checkInfo[1] + " " + checkInfo[2]);
     }
 

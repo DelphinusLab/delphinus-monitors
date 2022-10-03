@@ -14,7 +14,7 @@ import { getTokenIndex } from "delphinus-deployment/src/token-index";
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getChargeAddress } from "solidity/clients/client";
-import { checkDeployerAccountBalance } from "../tools/ethBalanceCheck/eth-balance-check";
+import { checkDeployerAccountBalance, getGasWarningAmount } from "../tools/ethBalanceCheck/eth-balance-check";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
 const SlackConfig = require("../../slack-alert-config.json");
@@ -108,9 +108,9 @@ async function main() {
         );
       }
     );
-  
-    const warningAmount = "1";
-    await checkDeployerAccountBalance(config, warningAmount);
+    
+    const gasWarningAmount = await getGasWarningAmount(config.chainName, process.argv[3]);
+    await checkDeployerAccountBalance(config, gasWarningAmount);
 
   } catch (e) {
     await sendAlert(e, SlackConfig, true);
