@@ -111,14 +111,16 @@ async function main() {
         );
       }
     );
-  
-    const warningAmount = "1";
-    await checkDeployerAccountBalance(config, warningAmount);
+    
+    const gasWarningAmount = await getGasWarningAmount(config.chainName, process.argv[3]);
+    await checkDeployerAccountBalance(config, gasWarningAmount);
 
   } catch (e) {
-    sendAlert(e, SlackConfig, true);
+    await sendAlert(e, SlackConfig, true);
   }
   console.log("exiting...");
+
+  process.exit();
 }
 
 main();
