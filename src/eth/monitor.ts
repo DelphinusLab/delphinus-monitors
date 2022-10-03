@@ -15,6 +15,7 @@ import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getChargeAddress } from "solidity/clients/client";
 import { checkDeployerAccountBalance, getGasWarningAmount } from "../tools/ethBalanceCheck/eth-balance-check";
+import { getEventSyncStartingPointByChainID } from "../tools/getEventSyncStartingPoint";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
 const SlackConfig = require("../../slack-alert-config.json");
@@ -75,6 +76,7 @@ async function handleAck(v: SwapAckEventType) {
 
 async function main() {
   let config = await getConfig();
+  let eventSyncStartingPoint = await getEventSyncStartingPointByChainID(config.deviceId);
 
   const handlers = {
     Deposit: async (v: DepositEventType, hash: string) => {
@@ -100,6 +102,7 @@ async function main() {
       config.monitorAccount,
       config.mongodbUrl,
       config.syncEventsStep,
+      eventSyncStartingPoint,
       (eventTracker: EventTracker) => {
         return eventTracker.syncEvents(
           async (eventName: string, v: any, hash: string) => {
