@@ -14,7 +14,7 @@ import { getTokenIndex } from "delphinus-deployment/src/token-index";
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getChargeAddress } from "solidity/clients/client";
-import { checkDeployerAccountBalance } from "../tools/ethBalanceCheck/eth-balance-check";
+import { checkDeployerAccountBalance, getGasWarningAmount } from "../tools/ethBalanceCheck/eth-balance-check";
 import { getEventSyncStartingPointByChainID } from "../tools/getEventSyncStartingPoint";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
