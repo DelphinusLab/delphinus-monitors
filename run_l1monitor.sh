@@ -1,5 +1,5 @@
 while true
 do
-  node src/eth/monitor.js $1 $2
+  node --unhandled-rejections=strict src/eth/monitor.js $1 $2
   sleep 4
 done
