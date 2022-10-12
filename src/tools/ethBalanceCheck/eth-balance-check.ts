@@ -1,5 +1,7 @@
 import Web3 from "web3";
 import { ChainConfig } from "delphinus-deployment/src/types";
+import { getConfigByChainName } from "delphinus-deployment/src/config";
+import { L1ClientRole } from "delphinus-deployment/src/types";
 
 export async function checkDeployerAccountBalance(config: ChainConfig, warningAmount: string){
   if (config.privateKey === "") {
@@ -50,7 +52,22 @@ export async function getNativeCurrencySymbolByChainId(chainId: string){
 
 export async function getChainInfoByChainID(chainId:string) {
   const fetch = require("node-fetch");
-  const allConfigs = await (await fetch("https://chainid.network/chains.json")).json();
+  const allConfigs = await (await fetch("https://chainid.network/chains.json", {timeout:10000})).json();
   let configInfo = await allConfigs.find((config:any) => config.chainId == parseInt(chainId));
   return configInfo;
+}
+
+export async function getGasWarningAmount(chainName:string, setWarningAmount?:string) { 
+  // Default warning amount
+  let warningAmount = "1";
+  if(setWarningAmount && !isNaN(Number(setWarningAmount))){
+    warningAmount = setWarningAmount;
+    return warningAmount ;
+  }
+  
+  const config = await getConfigByChainName(L1ClientRole.Monitor, chainName);
+  if(config.gasWarningAmount && !isNaN(Number(config.gasWarningAmount))){
+    warningAmount = config.gasWarningAmount;
+  }
+  return warningAmount
 }

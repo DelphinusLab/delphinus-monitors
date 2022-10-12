@@ -1,6 +1,7 @@
 import { EventTracker } from "web3subscriber/src/sync-pending-events";
 import { getConfigByChainName } from "delphinus-deployment/src/config";
 import { L1ClientRole } from "delphinus-deployment/src/types";
+import { getEventSyncStartingPointByChainID } from "../tools/getEventSyncStartingPoint";
 
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
 
@@ -10,6 +11,7 @@ async function main() {
     process.argv[2]
   );
   console.log("config:", config);
+  let eventSyncStartingPoint = await getEventSyncStartingPointByChainID(config.deviceId);
 
   let etracker = new EventTracker(
     config.deviceId,
@@ -17,6 +19,8 @@ async function main() {
     config.wsSource,
     config.monitorAccount,
     config.mongodbUrl,
+    config.syncEventsStep,
+    eventSyncStartingPoint,
   );
 
   await etracker.subscribePendingEvents().then((v) => {

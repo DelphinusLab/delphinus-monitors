@@ -14,7 +14,8 @@ import { getTokenIndex } from "delphinus-deployment/src/token-index";
 import { SubstrateClient, withL2Client as L2Client } from "../substrate/client";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getChargeAddress } from "solidity/clients/client";
-import { checkDeployerAccountBalance } from "../tools/ethBalanceCheck/eth-balance-check";
+import { checkDeployerAccountBalance, getGasWarningAmount } from "../tools/ethBalanceCheck/eth-balance-check";
+import { getEventSyncStartingPointByChainID } from "../tools/getEventSyncStartingPoint";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
 const SlackConfig = require("../../slack-alert-config.json");
@@ -75,6 +76,7 @@ async function handleAck(v: SwapAckEventType) {
 
 async function main() {
   let config = await getConfig();
+  let eventSyncStartingPoint = await getEventSyncStartingPointByChainID(config.deviceId);
 
   const handlers = {
     Deposit: async (v: DepositEventType, hash: string) => {
@@ -99,6 +101,8 @@ async function main() {
       config.rpcSource,
       config.monitorAccount,
       config.mongodbUrl,
+      config.syncEventsStep,
+      eventSyncStartingPoint,
       (eventTracker: EventTracker) => {
         return eventTracker.syncEvents(
           async (eventName: string, v: any, hash: string) => {
@@ -107,14 +111,16 @@ async function main() {
         );
       }
     );
-  
-    const warningAmount = "1";
-    await checkDeployerAccountBalance(config, warningAmount);
+    
+    const gasWarningAmount = await getGasWarningAmount(config.chainName, process.argv[3]);
+    await checkDeployerAccountBalance(config, gasWarningAmount);
 
   } catch (e) {
-    sendAlert(e, SlackConfig, true);
+    await sendAlert(e, SlackConfig, true);
   }
   console.log("exiting...");
+
+  process.exit();
 }
 
 main();
