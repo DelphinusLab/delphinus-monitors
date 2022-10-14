@@ -41,11 +41,6 @@ async function main() {
       }
     );
 
-    console.log("Pending Reqs:")
-    for (var tx of txList) {
-      console.log("tx:", tx[0].toString());
-    }
-
     let compTxList = await withL2Client(
       (await getEnabledEthConfigs(L1ClientRole.Monitor))[0].l2Account,
       async (l2Client: SubstrateClient) => {
@@ -53,15 +48,26 @@ async function main() {
       }
     );
 
-    console.log("Completed Reqs:")
-    for (var tx of compTxList) {
-      console.log("tx:", tx[0].toString());
+    let cLength = compTxList.length;
+    let tLength = txList.length;
+    if(tLength != 0) {
+      console.log("pending reqs length", tLength + ", tx is:" + Number(cLength+1) + "-" + Number(cLength + tLength));
+    } else {
+      console.log("pending reqs length", tLength);
+    }
+    if(process.argv[2] == "v") {
+      console.log("\n----- pending reqs -----");
+      console.log(JSON.stringify(txList, null, 2));
+      console.log("----- pending reqs -----\n");
     }
 
+    if(cLength != 0) {
+      console.log("completed reqs length" + cLength + ", tx is: 1-" + cLength);
+    } else {
+      console.log("completed reqs length", cLength);
+    }
 
-
-    console.log("pending req length", txList.length);
-    if (txList.length === 0) {
+    if (tLength === 0) {
       console.log("no pending req, exiting...");
       return;
     }
