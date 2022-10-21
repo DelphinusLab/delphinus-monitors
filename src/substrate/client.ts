@@ -59,7 +59,7 @@ export class SubstrateQueryClient {
     const txMap = await this.getCompleteReqMap();
     return Array.from(txMap.entries())
       .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
-      .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
+      .sort((kv1, kv2) => (kv1[0].sub(kv2[0]).isNeg() ? -1 : 1));
   }
 }
 
@@ -102,9 +102,14 @@ export class SubstrateClient extends SubstrateQueryClient {
     const sudo = await this.getSudo();
 
     if (SubstrateClient.nonce.get(this.account) === undefined) {
-      SubstrateClient.nonce.set(this.account, new BN(
-        (await api.query.system.account((sudo as any).address)).nonce.toNumber()
-      ));
+      SubstrateClient.nonce.set(
+        this.account,
+        new BN(
+          (
+            await api.query.system.account((sudo as any).address)
+          ).nonce.toNumber()
+        )
+      );
     }
 
     const nonce = SubstrateClient.nonce.get(this.account)!;
@@ -134,15 +139,19 @@ export class SubstrateClient extends SubstrateQueryClient {
     console.log("current nonce in send:", nonce);
     await new Promise(async (resolve, reject) => {
       // TODO: handle error events
-      const unsub = await tx.signAndSend(sudo, { nonce }, ({ events = [], status }) => {
-        if (status.isFinalized) {
-          events.forEach(({ phase, event: { data, method, section } }) => {
-            console.log(`\t' ${phase}: ${section}.${method}:: ${data}`);
-          });
-          unsub();
-          resolve(undefined);
+      const unsub = await tx.signAndSend(
+        sudo,
+        { nonce },
+        ({ events = [], status }) => {
+          if (status.isFinalized) {
+            events.forEach(({ phase, event: { data, method, section } }) => {
+              console.log(`\t' ${phase}: ${section}.${method}:: ${data}`);
+            });
+            unsub();
+            resolve(undefined);
+          }
         }
-      });
+      );
     });
   }
 
@@ -159,7 +168,9 @@ export class SubstrateClient extends SubstrateQueryClient {
     const api = await this.getAPI();
     const sudo = await this.getSudo();
     const accountId = ss58.addressToAddressId((sudo as any).address);
-    const accountIndexOpt: any = await api.query.swapModule.accountIndexMap(account);
+    const accountIndexOpt: any = await api.query.swapModule.accountIndexMap(
+      account
+    );
     const l2nonce = await api.query.swapModule.nonceMap(accountId);
 
     if (accountIndexOpt.isNone) {
@@ -198,9 +209,8 @@ export class SubstrateClient extends SubstrateQueryClient {
     const txMap = await this.getPendingReqMap();
     return Array.from(txMap.entries())
       .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
-      .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
+      .sort((kv1, kv2) => (kv1[0].sub(kv2[0]).isNeg() ? -1 : 1));
   }
-
 
   public async getCompleteReqMap() {
     const api = await this.getAPI();
@@ -215,9 +225,99 @@ export class SubstrateClient extends SubstrateQueryClient {
     const txMap = await this.getCompleteReqMap();
     return Array.from(txMap.entries())
       .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
-      .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
+      .sort((kv1, kv2) => (kv1[0].sub(kv2[0]).isNeg() ? -1 : 1));
   }
 
+  public async syncAllExtrinsics(from: number = 0) {
+    const api = await this.getAPI();
+    const signedBlock = await api.rpc.chain.getBlock();
+    const blockNumber = signedBlock.block.header.number.toNumber();
+    console.log("latest block:" + blockNumber);
+
+    //Change this j = blockNumber to any number in development to track manually
+    //TODO: use @param from to sync from latest in DB if needed
+    for (let j = blockNumber; j >= 0; j--) {
+      console.log(`syncing block: ${j} \n`);
+
+      const currBlockhash = await api.rpc.chain.getBlockHash(j);
+      const currBlock = await api.rpc.chain.getBlock(currBlockhash);
+      const timestamp = await api.query.timestamp.now.at(currBlockhash);
+
+      console.log("currBlockhash:", currBlockhash.toHex());
+
+      const extrinsics = currBlock.block.extrinsics;
+      const eventInfo = await api.query.system.events.at(currBlockhash);
+
+      console.log("found events:", eventInfo.length);
+      console.log("found extrinsics:", extrinsics.length);
+      for (let i = 0; i < extrinsics.length; i++) {
+        const ext = extrinsics[i];
+        const events = eventInfo.filter(
+          ({ phase }) => phase.isApplyExtrinsic && phase.asApplyExtrinsic.eq(i)
+        );
+
+        //check success or fail event
+        //extrinsic within block
+
+        const {
+          isSigned,
+          method: { args, method, section },
+        } = ext;
+
+        //index signed transactions for now
+        if (isSigned) {
+          const { event, phase } = events[0];
+          console.log("block timestamp:", timestamp.toNumber());
+          if (!api.events.system.ExtrinsicFailed.is(event)) {
+            const { event: secondary } = events[1]; // this contains the fee, however seems slightly inefficient to get it this way
+
+            console.log("Successful event");
+            // console.log("event:", event.toHuman(), "\n");
+            // console.log("event transaction:", secondary.toHuman(), "\n");
+            events.forEach(({ event: { data, method, section } }, eIndex) => {
+              let types = events[eIndex].event.typeDef;
+              console.log(`\t' ${section}.${method}:: ${data}`);
+              // loop through each of the parameters, displaying the type and data
+              data.forEach((data, index) => {
+                console.log(`\t\t\t${types[index].type}: ${data.toString()}`);
+              });
+            });
+            console.log(
+              "fee:",
+              JSON.parse(secondary.data[0].toString()).weight.toString()
+            );
+            // console.log(
+            //   `${section}.${method}(${args
+            //     .map((a) => a.toString())
+            //     .join(", ")})`
+            // ); //Extrinsic data
+
+            //todo: parse and log events in DB
+          } else {
+            console.log("failed event");
+            const [dispatchError, dispatchInfo] = event.data;
+            let errorInfo;
+
+            // decode the error
+            if (dispatchError.isModule) {
+              // for module errors, we have the section indexed, lookup
+              // (For specific known errors, we can also do a check against the
+              // api.errors.<module>.<ErrorName>.is(dispatchError.asModule) guard)
+              const decoded = api.registry.findMetaError(
+                dispatchError.asModule
+              );
+
+              errorInfo = `${decoded.section}.${decoded.name}`;
+            } else {
+              // Other, CannotLookup, BadOrigin, no extra info
+              errorInfo = dispatchError.toString();
+            }
+            console.log("errorInfo:", errorInfo);
+          }
+        }
+      }
+    }
+  }
 
   public async getEvents(header: any) {
     const api = await this.getAPI();
