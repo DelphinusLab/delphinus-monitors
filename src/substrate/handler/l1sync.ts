@@ -157,11 +157,11 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
       ]).flat(2);
     const proofBuffer = proofArray.map(x => new BN(x));
 
-    console.log("----- verify args -----");
-    console.log(new BN(rid, 10).toString());
-    console.log(commandBuffer.map(x => x.toString()));
-    console.log(proofBuffer.map(x => x.toString()));
-    console.log("----- verify args -----");
+    console.log("\n----- verify args -----");
+    console.log("current rid:", new BN(rid, 10).toString());
+    console.log("commandBuffer:\n", commandBuffer.map(x => x.toString()));
+    console.log("proofBuffer:\n", proofBuffer.map(x => x.toString()));
+    console.log("----- verify args -----\n");
 
     for (const config of await getEnabledEthConfigs(L1ClientRole.Monitor)) {
       await withL1Client(config, false, (l1client: L1Client) => {
