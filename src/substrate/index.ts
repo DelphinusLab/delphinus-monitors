@@ -48,17 +48,28 @@ async function main() {
       }
     );
 
+    let ackList = await withL2Client(
+      (await getEnabledEthConfigs(L1ClientRole.Monitor))[0].l2Account,
+      async (l2Client: SubstrateClient) => {
+        return await l2Client.getAcks();
+      }
+    );
+
     let cLength = compTxList.length;
     let tLength = txList.length;
     if(tLength != 0) {
       console.log("pending reqs length", tLength + ", tx is:" + Number(cLength+1) + "-" + Number(cLength + tLength));
+
+      if(process.argv[2] == "v") {
+        console.log("\n----- pending reqs -----\n");
+        for (const kv of txList) {
+          console.log("req id:", kv[0].toString(10));
+          console.log("op:", JSON.stringify(kv[1], null, 2), "\n");
+        }
+        console.log("----- pending reqs -----\n");
+      }
     } else {
       console.log("pending reqs length", tLength);
-    }
-    if(process.argv[2] == "v") {
-      console.log("\n----- pending reqs -----");
-      console.log(JSON.stringify(txList, null, 2));
-      console.log("----- pending reqs -----\n");
     }
 
     if(cLength != 0) {
@@ -83,7 +94,27 @@ async function main() {
       }
     };
 
+    let ackString = JSON.stringify(ackList);
+    let ackTargetString;
+    let ackBitsArr;
+    let ackBits;
+    let ridBase10;
+    let rid;
     for (const kv of txList) {
+      ridBase10 = kv[0].toString(10);
+      rid = JSON.stringify(kv[0]);
+      if(ackString.indexOf(rid) != -1) {
+        ackTargetString = ackString.substr(ackString.indexOf(rid) + rid.length);
+        if(ackTargetString) {
+          ackBitsArr = /\"(.+?)\"/.exec(ackTargetString);
+          if(ackBitsArr) {
+            ackBits = parseInt(ackBitsArr[1]).toString(2).padStart(4, "0");
+          }
+        }
+        console.log(`rid is ${ridBase10}, ack_bits: ${ackBits}`);
+      } else {
+        console.log(`rid is ${ridBase10}`);
+      }
       await handleReq(kv, handleOp);
     }
 
