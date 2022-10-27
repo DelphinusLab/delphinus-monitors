@@ -213,6 +213,7 @@ export class SubstrateClient extends SubstrateQueryClient {
   }
 
   public async getCompleteReqMap() {
+    console.log("using this one");
     const api = await this.getAPI();
     const rawMap = await api.query.swapModule.completeReqMap.entriesAt(
       this.lastHeader.hash
@@ -231,18 +232,18 @@ export class SubstrateClient extends SubstrateQueryClient {
   public async syncAllExtrinsics(from: number = 0) {
     const api = await this.getAPI();
     const signedBlock = await api.rpc.chain.getBlock();
-    const blockNumber = signedBlock.block.header.number.toNumber();
+    let blockNumber = signedBlock.block.header.number.toNumber();
     console.log("latest block:" + blockNumber);
 
     //Change this j = blockNumber to any number in development to track manually
     //TODO: use @param from to sync from latest in DB if needed
+    //blockNumber = 140882;
     for (let j = blockNumber; j >= 0; j--) {
       console.log(`syncing block: ${j} \n`);
 
       const currBlockhash = await api.rpc.chain.getBlockHash(j);
       const currBlock = await api.rpc.chain.getBlock(currBlockhash);
       const timestamp = await api.query.timestamp.now.at(currBlockhash);
-
       console.log("currBlockhash:", currBlockhash.toHex());
 
       const extrinsics = currBlock.block.extrinsics;
@@ -293,9 +294,19 @@ export class SubstrateClient extends SubstrateQueryClient {
             // ); //Extrinsic data
 
             //todo: parse and log events in DB
+            //return information about extrinsic and event
           } else {
             console.log("failed event");
             const [dispatchError, dispatchInfo] = event.data;
+            console.log("extrinsic:", ext.toHuman(), "\n");
+            //This will show args of the extrinsic that failed (without origin param)
+            console.log(
+              `extrinsic error: ${section}.${method}(${args
+                .map((a) => a.toString())
+                .join(", ")})`
+            );
+            console.log("event:", event.toHuman(), "\n");
+            console.log("Tx Info?? :", dispatchInfo.toString());
             let errorInfo;
 
             // decode the error
@@ -313,6 +324,8 @@ export class SubstrateClient extends SubstrateQueryClient {
               errorInfo = dispatchError.toString();
             }
             console.log("errorInfo:", errorInfo);
+
+            //return information about extrinsic and event ERROR
           }
         }
       }
