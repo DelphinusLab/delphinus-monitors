@@ -6,7 +6,7 @@ import { cryptoWaitReady } from "@polkadot/util-crypto";
 
 import { getSubstrateNodeConfig } from "delphinus-deployment/src/config";
 import { SwapHelper } from "delphinus-l2-client-helper/src/swap";
-
+import { ExtrinsicSuccess, ExtrinsicFail } from "../indexer/indexStorage";
 import * as types from "delphinus-l2-client-helper/src/swap-types.json";
 import * as DelphinusCrypto from "delphinus-crypto/node/pkg/delphinus_crypto";
 
@@ -213,7 +213,6 @@ export class SubstrateClient extends SubstrateQueryClient {
   }
 
   public async getCompleteReqMap() {
-    console.log("using this one");
     const api = await this.getAPI();
     const rawMap = await api.query.swapModule.completeReqMap.entriesAt(
       this.lastHeader.hash
@@ -229,7 +228,9 @@ export class SubstrateClient extends SubstrateQueryClient {
       .sort((kv1, kv2) => (kv1[0].sub(kv2[0]).isNeg() ? -1 : 1));
   }
 
-  public async syncAllExtrinsics(from: number = 0) {
+  public async syncBlockExtrinsics(
+    from: number = 0
+  ): Promise<ExtrinsicSuccess | ExtrinsicFail | undefined> {
     const api = await this.getAPI();
     const signedBlock = await api.rpc.chain.getBlock();
     let blockNumber = signedBlock.block.header.number.toNumber();
@@ -237,7 +238,8 @@ export class SubstrateClient extends SubstrateQueryClient {
 
     //Change this j = blockNumber to any number in development to track manually
     //TODO: use @param from to sync from latest in DB if needed
-    //blockNumber = 140882;
+    //blockNumber = 140882; //-- fail
+    //blockNumber = 143207; //-- success
     for (let j = blockNumber; j >= 0; j--) {
       console.log(`syncing block: ${j} \n`);
 
@@ -262,6 +264,7 @@ export class SubstrateClient extends SubstrateQueryClient {
 
         const {
           isSigned,
+          signer,
           method: { args, method, section },
         } = ext;
 
@@ -269,6 +272,7 @@ export class SubstrateClient extends SubstrateQueryClient {
         if (isSigned) {
           const { event, phase } = events[0];
           console.log("block timestamp:", timestamp.toNumber());
+          console.log("signer: ", signer.toString());
           if (!api.events.system.ExtrinsicFailed.is(event)) {
             const { event: secondary } = events[1]; // this contains the fee, however seems slightly inefficient to get it this way
 
@@ -295,6 +299,21 @@ export class SubstrateClient extends SubstrateQueryClient {
 
             //todo: parse and log events in DB
             //return information about extrinsic and event
+
+            const success: ExtrinsicSuccess = {
+              blockNumber: blockNumber, //block number
+              blockHash: currBlockhash.toHex(), //block hash
+              extrinsicIndex: i, //index of extrinsic in block
+              extrinsicHash: ext.hash.toHex(), //tx hash
+              module: section, //swap module
+              method: method, //function that was called
+              signer: signer.toString(), //signer of tx
+              args: Array.from(args), //This is the input data
+              data: event.data, //this is the output data from the event
+              fee: JSON.parse(secondary.data[0].toString()).weight.toString(),
+              timestamp: timestamp.toNumber(), //unix timestamp
+            };
+            return success;
           } else {
             console.log("failed event");
             const [dispatchError, dispatchInfo] = event.data;
@@ -307,6 +326,7 @@ export class SubstrateClient extends SubstrateQueryClient {
             );
             console.log("event:", event.toHuman(), "\n");
             console.log("Tx Info?? :", dispatchInfo.toString());
+            const fee = JSON.parse(dispatchInfo.toString()).weight.toString();
             let errorInfo;
 
             // decode the error
@@ -326,6 +346,20 @@ export class SubstrateClient extends SubstrateQueryClient {
             console.log("errorInfo:", errorInfo);
 
             //return information about extrinsic and event ERROR
+            const fail: ExtrinsicFail = {
+              blockNumber: blockNumber, //block number
+              blockHash: currBlockhash.toHex(), //block hash
+              extrinsicIndex: i, //index of extrinsic in block
+              extrinsicHash: ext.hash.toHex(), //tx hash
+              signer: signer.toString(),
+              module: section, //swap module
+              method: method, //function that was called
+              args: args, //This is the input data
+              fee: fee,
+              timestamp: timestamp.toNumber(), //unix timestamp
+              error: errorInfo,
+            };
+            return fail;
           }
         }
       }

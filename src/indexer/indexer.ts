@@ -5,6 +5,7 @@ import { handler as eventRecorder } from "./indexStorage";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { CommandOp } from "delphinus-l2-client-helper/src/swap";
+import { ExtrinsicSuccess, ExtrinsicFail } from "./indexStorage";
 
 export interface EventHandler {
   preHandler?: (commitedRid: BN) => Promise<void>;
@@ -20,15 +21,16 @@ async function main() {
 
   try {
     console.log("starting l2 indexer");
-
-    await withL2Client(
+    let tx = (await withL2Client(
       (
         await getEnabledEthConfigs(L1ClientRole.Monitor)
       )[0].l2Account,
       async (l2Client: SubstrateClient) => {
-        return await l2Client.syncAllExtrinsics();
+        return await l2Client.syncBlockExtrinsics();
       }
-    );
+    )) as ExtrinsicFail | ExtrinsicSuccess | undefined;
+    console.log("tx:", tx);
+    if(tx) await eventRecorder.saveEvent(tx);
   } catch (e) {
     console.log(e);
   }
