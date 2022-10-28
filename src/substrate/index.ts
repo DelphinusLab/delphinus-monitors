@@ -10,6 +10,7 @@ import { handleReq } from "./swapUtils";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
 const SlackConfig = require("../../slack-alert-config.json");
+const AccountConfig = require("delphinus-deployment/config/substrate-account-config.json");
 
 export interface EventHandler {
   preHandler?: (commitedRid: BN) => Promise<void>;
@@ -94,26 +95,24 @@ async function main() {
       }
     };
 
-    let ackString = JSON.stringify(ackList);
-    let ackTargetString;
-    let ackBitsArr;
+    // for example, ackList: [["01","0x0f"],["02","0x0f"],["03","0x0f"],["04","0x0f"],["05","0x0f"],["06","0x0f"],["07","0x0f"],["08","0x0f"],["09","0x0f"],["0a","0x0f"]]
+    // ack_bits: Convert hex(0x0f) to binary(1111). If the number is less than 4, add 0 on the left to make a string of length 4
+    // Refer to "secret_key_uri" in "deployment/config/substrate-account-config.json" for what does each bit of ack_bits represent. For example, if ack_bits is 0001, the first seed in "secret_key_uri" is "//Smith". Find "Smith" in "deployment/config/eth-config.ts". You can find corresponding chainName.
+    let ackArr;
     let ackBits;
-    let ridBase10;
     let rid;
+    console.log("accounts corresponding to ack_bits:", AccountConfig["secret_key_uri"]);
     for (const kv of txList) {
-      ridBase10 = kv[0].toString(10);
-      rid = JSON.stringify(kv[0]);
-      if(ackString.indexOf(rid) != -1) {
-        ackTargetString = ackString.substr(ackString.indexOf(rid) + rid.length);
-        if(ackTargetString) {
-          ackBitsArr = /\"(.+?)\"/.exec(ackTargetString);
-          if(ackBitsArr) {
-            ackBits = parseInt(ackBitsArr[1]).toString(2).padStart(4, "0");
-          }
-        }
-        console.log(`rid is ${ridBase10}, ack_bits: ${ackBits}`);
+      rid = kv[0].toString(10);
+      let ackArr = ackList.filter(function(arr){
+          return arr[0].eq(kv[0]);
+      });
+      if(ackArr.length != 0) {
+        // for example, if ackArr is ["0a", "0x3"], ackBits is "0011"
+        ackBits = parseInt(ackArr[0][1].toString()).toString(2).padStart(4, "0");
+        console.log(`rid is ${rid}, ack_bits: ${ackBits}`);
       } else {
-        console.log(`rid is ${ridBase10}`);
+        console.log(`rid is ${rid}`);
       }
       await handleReq(kv, handleOp);
     }
