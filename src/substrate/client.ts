@@ -291,6 +291,8 @@ export class SubstrateClient extends SubstrateQueryClient {
                 console.log(`\t\t\t${types[index].type}: ${data.toString()}`);
               });
             });
+
+            let parsedData = event.data.map((a) => a.toString());
             console.log(
               "fee:",
               JSON.parse(secondary.data[0].toString()).weight.toString()
@@ -315,7 +317,7 @@ export class SubstrateClient extends SubstrateQueryClient {
               method: method, //function that was called
               signer: signer.toString(), //signer of tx - usually user however also can be monitor/relayer
               args: parsedArgs, //This is the input data
-              data: event.data, //this is the output data from the event
+              data: parsedData, //this is the output data from the event
               fee: JSON.parse(secondary.data[0].toString()).weight.toString(),
               timestamp: timestamp.toNumber(), //unix timestamp
             };
