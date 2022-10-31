@@ -231,16 +231,13 @@ export class SubstrateClient extends SubstrateQueryClient {
   public async syncBlockExtrinsics(
     from: number = 0,
     to: number = from
-  ): Promise<ExtrinsicSuccess | ExtrinsicFail | undefined> {
+  ): Promise<(ExtrinsicSuccess | ExtrinsicFail)[] > {
     const api = await this.getAPI();
-    const signedBlock = await api.rpc.chain.getBlock();
-    let blockNumber = signedBlock.block.header.number.toNumber();
-    console.log("latest block:" + blockNumber);
-
     //Change this j = blockNumber to any number in development to track manually
     //TODO: use @param from to sync from latest in DB if needed
     //blockNumber = 140882; //-- fail
     //blockNumber = 143207; //-- success
+    let blockTransactions: (ExtrinsicFail | ExtrinsicSuccess)[] = [];
     console.log("from: ", from);
     for (let j = from; j <= to; j++) {
       console.log(`syncing block: ${j} \n`);
@@ -272,15 +269,20 @@ export class SubstrateClient extends SubstrateQueryClient {
 
         //index signed transactions for now
         if (isSigned) {
+          let parsedArgs = args.map((a) => a.toString());
+          console.log(parsedArgs, "args");
           const { event, phase } = events[0];
           console.log("block timestamp:", timestamp.toNumber());
           console.log("signer: ", signer.toString());
           if (!api.events.system.ExtrinsicFailed.is(event)) {
-            const { event: secondary } = events[1]; // this contains the fee, however seems slightly inefficient to get it this way
+            const { event: secondary } = events[events.length - 1]; // this contains the fee, (system.extrinsicSuccess)
 
             console.log("Successful event");
             // console.log("event:", event.toHuman(), "\n");
             // console.log("event transaction:", secondary.toHuman(), "\n");
+
+            //loop each event to check (maybe filter for swap module only) 
+            //For example, creating a new account will emit 4 events (system.newAccount, balances.endowed, swapModule.rewardfunds and system.ExtrinsicSuccess)
             events.forEach(({ event: { data, method, section } }, eIndex) => {
               let types = events[eIndex].event.typeDef;
               console.log(`\t' ${section}.${method}:: ${data}`);
@@ -302,20 +304,22 @@ export class SubstrateClient extends SubstrateQueryClient {
             //todo: parse and log events in DB
             //return information about extrinsic and event
 
+            //convert args into usable strings
+            
             const success: ExtrinsicSuccess = {
-              blockNumber: blockNumber, //block number
+              blockNumber: j, //block number
               blockHash: currBlockhash.toHex(), //block hash
               extrinsicIndex: i, //index of extrinsic in block
               extrinsicHash: ext.hash.toHex(), //tx hash
               module: section, //swap module
               method: method, //function that was called
-              signer: signer.toString(), //signer of tx
-              args: Array.from(args), //This is the input data
+              signer: signer.toString(), //signer of tx - usually user however also can be monitor/relayer
+              args: parsedArgs, //This is the input data
               data: event.data, //this is the output data from the event
               fee: JSON.parse(secondary.data[0].toString()).weight.toString(),
               timestamp: timestamp.toNumber(), //unix timestamp
             };
-            return success;
+            blockTransactions.push(success);
           } else {
             console.log("failed event");
             const [dispatchError, dispatchInfo] = event.data;
@@ -327,7 +331,7 @@ export class SubstrateClient extends SubstrateQueryClient {
                 .join(", ")})`
             );
             console.log("event:", event.toHuman(), "\n");
-            console.log("Tx Info?? :", dispatchInfo.toString());
+            console.log("Tx Info :", dispatchInfo.toString());
             const fee = JSON.parse(dispatchInfo.toString()).weight.toString();
             let errorInfo;
 
@@ -349,23 +353,24 @@ export class SubstrateClient extends SubstrateQueryClient {
 
             //return information about extrinsic and event ERROR
             const fail: ExtrinsicFail = {
-              blockNumber: blockNumber, //block number
+              blockNumber: j, //block number
               blockHash: currBlockhash.toHex(), //block hash
               extrinsicIndex: i, //index of extrinsic in block
               extrinsicHash: ext.hash.toHex(), //tx hash
               signer: signer.toString(),
               module: section, //swap module
               method: method, //function that was called
-              args: args, //This is the input data
+              args: parsedArgs, //This is the input data
               fee: fee,
               timestamp: timestamp.toNumber(), //unix timestamp
               error: errorInfo,
             };
-            return fail;
+            blockTransactions.push(fail);
           }
         }
       }
     }
+    return blockTransactions;
   }
 
   public async getEvents(header: any) {

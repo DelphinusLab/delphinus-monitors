@@ -106,23 +106,20 @@ export class EventRecorderDB extends DBHelper {
   }
   //TODO: use updated saveEvent function to store all tx info
   //create types for events and extrinsics
-  async saveEvent(transaction: DBExtrinsic | ExtrinsicSuccess | ExtrinsicFail) {
+  async saveEvent(transactions: (ExtrinsicSuccess | ExtrinsicFail)[]) {
+    const { blockNumber, extrinsicIndex } = transactions[0];
     const collection = await this.getOrCreateEventCollection(
-      "l2_transactions",
-      { rid: 1 }
+      "l2_transactions"
     );
-    const { blockNumber, extrinsicIndex } = transaction;
+    
     let r = await collection.findOne({
       blockNumber: blockNumber,
       extrinsicIndex: extrinsicIndex,
     });
     if (r === null) {
-      // const doc = {
-      //   rid: rid,
-      //   command: op,
-      //   args: args.map((x) => x.toString()),
-      // };
-      await collection.insertOne(transaction);
+      console.log("inserting transactions");
+      //TODO: handle case of missing tx from block
+      await collection.insertMany(transactions);
     }
   }
 
@@ -144,8 +141,8 @@ export class EventRecorderDB extends DBHelper {
   }
   async getLatestEntry() {
     const collection = await this.getOrCreateEventCollection("l2_transactions");
-    const r = await collection.find().sort({ $natural: -1 }).limit(1);
-    console.log(r);
+    const r = await collection.find<DBExtrinsic>({}).sort({ $natural: -1 }).limit(1).toArray();
+   
     return r;
   }
 }
@@ -154,29 +151,42 @@ export class EventRecorderDB extends DBHelper {
  * Record L2 Event in DB
  */
 export async function eventRecorder(
-  transaction: ExtrinsicFail | ExtrinsicSuccess
+  transactions: (ExtrinsicFail | ExtrinsicSuccess)[]
 ) {
   const uri = await getL2EventRecorderDbUri();
-  //TODO: Parse transaction data into DB format
+  //TODO: Parse transaction data into DB format with DBExtrinsic Type
 
   await withDBHelper(
     EventRecorderDB,
     uri,
     "substrate",
     async (db: EventRecorderDB) => {
-      await db.saveEvent(transaction);
+      await db.saveEvent(transactions);
     }
   );
 }
 
 export async function latestDbTx() {
   const uri = await getL2EventRecorderDbUri();
-  await withDBHelper(
+  return await withDBHelper(
     EventRecorderDB,
     uri,
     "substrate",
     async (db: EventRecorderDB) => {
       const r = await db.getLatestEntry();
+      return r;
+    }
+  );
+}
+
+export async function clearDb() {
+  const uri = await getL2EventRecorderDbUri();
+  return await withDBHelper(
+    EventRecorderDB,
+    uri,
+    "substrate",
+    async (db: EventRecorderDB) => {
+      const r = await db.drop();
       return r;
     }
   );
