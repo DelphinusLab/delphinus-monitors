@@ -4,17 +4,20 @@ import { CommandOp, commandName } from "delphinus-l2-client-helper/src/swap";
 import { DBHelper, withDBHelper } from "web3subscriber/src/dbhelper";
 import { EventHandler } from "../substrate";
 
-export interface BaseExtrinsic {
-  // All this data is obtainable for failed and successful extrinsics
+export interface Block {
   blockNumber: number;
   blockHash: string;
+  timestamp: number;
+}
+
+export interface BaseExtrinsic extends Block {
+  // All this data is obtainable for failed and successful extrinsics
   extrinsicIndex: number;
   extrinsicHash: string;
   module: string;
   method: string;
   args: any; //TODO: type this
   fee: string;
-  timestamp: number;
   signer: string;
 }
 
@@ -29,6 +32,8 @@ export interface ExtrinsicFail extends BaseExtrinsic {
 
 export interface DBExtrinsic {
   rid?: string; // Only successfull transactions will have a ReqID
+  blockNumber: number;
+  extrinsicIndex: number;
   txId: string; // extrinsicId + blockNumber (formatted maybe such as 1234-5678)
   signer: string; //L2 address of the signer
   command: string; // Command name
@@ -101,12 +106,16 @@ export class EventRecorderDB extends DBHelper {
   }
   //TODO: use updated saveEvent function to store all tx info
   //create types for events and extrinsics
-  async saveEvent(transaction: DBExtrinsic) {
+  async saveEvent(transaction: DBExtrinsic | ExtrinsicSuccess | ExtrinsicFail) {
     const collection = await this.getOrCreateEventCollection(
       "l2_transactions",
       { rid: 1 }
     );
-    let r = await collection.findOne({ rid: transaction.rid });
+    const { blockNumber, extrinsicIndex } = transaction;
+    let r = await collection.findOne({
+      blockNumber: blockNumber,
+      extrinsicIndex: extrinsicIndex,
+    });
     if (r === null) {
       // const doc = {
       //   rid: rid,
@@ -120,28 +129,33 @@ export class EventRecorderDB extends DBHelper {
   async loadEvents() {
     const collection = await this.getOrCreateEventCollection("l2_transactions");
     // rid is suppose to match event(op)
-    return (
-      await collection
-        .aggregate([
-          {
-            $group: {
-              _id: "$rid",
-              docs: {
-                $first: "$$ROOT",
-              },
+    return await collection
+      .aggregate([
+        {
+          $group: {
+            _id: "$rid",
+            docs: {
+              $first: "$$ROOT",
             },
           },
-        ])
-        .toArray()
-    )
-      
+        },
+      ])
+      .toArray();
+  }
+  async getLatestEntry() {
+    const collection = await this.getOrCreateEventCollection("l2_transactions");
+    const r = await collection.find().sort({ $natural: -1 }).limit(1);
+    console.log(r);
+    return r;
   }
 }
 
 /**
  * Record L2 Event in DB
  */
-export async function eventRecorder(transaction: ExtrinsicFailed | ExtrinsicSuccess) {
+export async function eventRecorder(
+  transaction: ExtrinsicFail | ExtrinsicSuccess
+) {
   const uri = await getL2EventRecorderDbUri();
   //TODO: Parse transaction data into DB format
 
@@ -150,11 +164,20 @@ export async function eventRecorder(transaction: ExtrinsicFailed | ExtrinsicSucc
     uri,
     "substrate",
     async (db: EventRecorderDB) => {
-      await db.saveEvent(transaction as DBExtrinsic);
+      await db.saveEvent(transaction);
     }
   );
 }
 
-export const handler: EventHandler = {
-  eventHandler: eventRecorder,
-};
+export async function latestDbTx() {
+  const uri = await getL2EventRecorderDbUri();
+  await withDBHelper(
+    EventRecorderDB,
+    uri,
+    "substrate",
+    async (db: EventRecorderDB) => {
+      const r = await db.getLatestEntry();
+      return r;
+    }
+  );
+}

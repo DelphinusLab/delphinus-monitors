@@ -1,23 +1,17 @@
 import BN from "bn.js";
 import { dataToBN, SubstrateClient, withL2Client } from "../substrate/client";
 
-import { handler as eventRecorder } from "./indexStorage";
+import { eventRecorder, latestDbTx } from "./indexStorage";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 import { ExtrinsicSuccess, ExtrinsicFail } from "./indexStorage";
 
-export interface EventHandler {
-  preHandler?: (commitedRid: BN) => Promise<void>;
-  eventHandler?: (rid: string, op: CommandOp, args: any[]) => Promise<void>;
-}
-
-const l2EventHandlers = new Map<string, EventHandler>([
-  ["event recorder", eventRecorder],
-]);
-
 async function main() {
   //sync up to latest blocks, and then start listening for new events
+  //get latest block stored in DB
+  let lastEntry = await latestDbTx();
+  console.log("latestBlock:", lastEntry);
 
   try {
     console.log("starting l2 indexer");
@@ -26,11 +20,13 @@ async function main() {
         await getEnabledEthConfigs(L1ClientRole.Monitor)
       )[0].l2Account,
       async (l2Client: SubstrateClient) => {
-        return await l2Client.syncBlockExtrinsics();
+        let latestBlock = await l2Client.lastHeader;
+        console.log("latest block:", latestBlock.number.toString());
+        return await l2Client.syncBlockExtrinsics(latestBlock.number);
       }
     )) as ExtrinsicFail | ExtrinsicSuccess | undefined;
     console.log("tx:", tx);
-    if(tx) await eventRecorder.saveEvent(tx);
+    if (tx) await eventRecorder(tx);
   } catch (e) {
     console.log(e);
   }

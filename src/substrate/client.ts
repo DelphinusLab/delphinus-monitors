@@ -229,7 +229,8 @@ export class SubstrateClient extends SubstrateQueryClient {
   }
 
   public async syncBlockExtrinsics(
-    from: number = 0
+    from: number = 0,
+    to: number = from
   ): Promise<ExtrinsicSuccess | ExtrinsicFail | undefined> {
     const api = await this.getAPI();
     const signedBlock = await api.rpc.chain.getBlock();
@@ -240,7 +241,8 @@ export class SubstrateClient extends SubstrateQueryClient {
     //TODO: use @param from to sync from latest in DB if needed
     //blockNumber = 140882; //-- fail
     //blockNumber = 143207; //-- success
-    for (let j = blockNumber; j >= 0; j--) {
+    console.log("from: ", from);
+    for (let j = from; j <= to; j++) {
       console.log(`syncing block: ${j} \n`);
 
       const currBlockhash = await api.rpc.chain.getBlockHash(j);
