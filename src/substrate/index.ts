@@ -101,7 +101,7 @@ async function main() {
     let ackArr;
     let ackBits;
     let rid;
-    console.log("accounts corresponding to ack_bits:", AccountConfig["secret_key_uri"]);
+    console.log("accounts corresponding to ack_bits:", AccountConfig["secret_key_uri"].reverse());
     for (const kv of txList) {
       rid = kv[0].toString(10);
       let ackArr = ackList.filter(function(arr){
