@@ -11,6 +11,7 @@ import { handleReq } from "./swapUtils";
 import { sendAlert } from "delphinus-slack-alert/src/index";
 const SlackConfig = require("../../slack-alert-config.json");
 const AccountConfig = require("delphinus-deployment/config/substrate-account-config.json");
+require('console-stamp')(console, {format: ':date(yyyy/mm/dd HH:MM:ss)'});
 
 export interface EventHandler {
   preHandler?: (commitedRid: BN) => Promise<void>;
