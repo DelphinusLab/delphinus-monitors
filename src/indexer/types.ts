@@ -1,6 +1,34 @@
+export interface Block {
+  blockNumber: number;
+  blockHash: string;
+  timestamp: number;
+}
+
+export interface BaseExtrinsic extends Block {
+  // All this data is obtainable for failed and successful extrinsics
+  extrinsicIndex: number;
+  extrinsicHash: string;
+  module: string;
+  method: string;
+  args: any; //TODO: type this
+  fee: string;
+  signer: string;
+}
+
+export interface ExtrinsicSuccess extends BaseExtrinsic {
+  //TODO: turn into custom transaction data such as ReqID etc...
+  data: any[]; // event data from extrinsic
+}
+
+export interface ExtrinsicFail extends BaseExtrinsic {
+  error: string; //Error message from the node
+}
+
 //https://github.com/DelphinusLab/zkc-substrate-node/blob/main/pallets/swap/src/lib.rs
 // The args and event data is from the pallets/swap/src/lib.rs
 
+//TODO: Currently all data coming in from substrate is parsed to strings in /substrate/client.ts
+//If we want to store the data in mongodb as numbers, we need to parse it back to the correct type.
 export interface BaseEvent {
   //This data is emitted for all successful extrinsics
   reqId: number;
@@ -18,6 +46,18 @@ export interface SetKeyEvent extends BaseEvent {
   reserved: string;
   x: string;
   y: string;
+}
+
+export interface ChargeArgs {
+  l2Address: string; // User l2 address - TODO: need to find a way to use accountIndex property or handle Charge separately
+  amount: string;
+  l1_tx_hash: string;
+}
+
+export interface ChargeEvent {
+  relayerAddress: string; //relayer l2 address
+  amount: string;
+  blockNumber: number;
 }
 /* Deposit function inputs and output data */
 export interface DepositArgs {
@@ -101,7 +141,7 @@ export interface AddPoolArgs {
   nonce: number;
 }
 
-export interface AddPoolEvent extends Omit<BaseEvent, "accountIndex"> {
+export interface AddPoolEvent extends BaseEvent {
   reqId: number;
   sig1: string;
   sig2: string;
@@ -111,7 +151,7 @@ export interface AddPoolEvent extends Omit<BaseEvent, "accountIndex"> {
   tokenIndex1: number;
   reserve0: string;
   poolIndex: number;
-  sender: number; //account which added the pool
+  accountIndex: number; //account which added the pool, currently admin account only
 }
 
 /* Ack args */
