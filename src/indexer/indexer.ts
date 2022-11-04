@@ -10,7 +10,7 @@ import { ExtrinsicSuccess, ExtrinsicFail } from "./types";
 async function main() {
   //sync up to latest blocks, and then start listening for new events
   //get latest block stored in DB
-  await clearDb(); //Use this to drop the collection (for testing)
+  //await clearDb(); //Use this to drop the collection (for testing)
   //issue is if there are no transactions for while, it will resync from latest tx not latest block
   //so perhaps store latest block or just record all blocks regardless of TX
   let lastEntry = await latestDbTx();
