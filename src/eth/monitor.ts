@@ -16,6 +16,7 @@ import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getChargeAddress } from "solidity/clients/client";
 import { checkDeployerAccountBalance, getGasWarningAmount } from "../tools/ethBalanceCheck/eth-balance-check";
 import { getEventSyncStartingPointByChainID } from "../tools/getEventSyncStartingPoint";
+import { getBufferBlocks } from "../tools/getBufferBlocks";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
 const SlackConfig = require("../../slack-alert-config.json");
@@ -77,6 +78,7 @@ async function handleAck(v: SwapAckEventType) {
 async function main() {
   let config = await getConfig();
   let eventSyncStartingPoint = await getEventSyncStartingPointByChainID(config.deviceId);
+  let bufferBlocks = await getBufferBlocks(config.chainName);
 
   const handlers = {
     Deposit: async (v: DepositEventType, hash: string) => {
@@ -103,6 +105,7 @@ async function main() {
       config.mongodbUrl,
       config.syncEventsStep,
       eventSyncStartingPoint,
+      bufferBlocks,
       (eventTracker: EventTracker) => {
         return eventTracker.syncEvents(
           async (eventName: string, v: any, hash: string) => {
