@@ -3,6 +3,8 @@ import { getL2EventRecorderDbUri } from "delphinus-deployment/src/config";
 import { CommandOp, commandName } from "delphinus-l2-client-helper/src/swap";
 import { DBHelper, withDBHelper } from "web3subscriber/src/dbhelper";
 import {
+  ExtrinsicFail,
+  ExtrinsicSuccess,
   BaseEvent,
   DepositArgs,
   WithdrawArgs,
@@ -12,6 +14,7 @@ import {
   AckArgs,
   SetKeyArgs,
   AddPoolArgs,
+  ChargeArgs,
 } from "./types";
 
 import {
@@ -23,40 +26,32 @@ import {
   AckEvent,
   SetKeyEvent,
   AddPoolEvent,
+  ChargeEvent,
 } from "./types";
 
-export interface Block {
-  blockNumber: number;
-  blockHash: string;
-  timestamp: number;
-}
+export type UserEvents =
+  | SupplyEvent
+  | RetrieveEvent
+  | DepositEvent
+  | WithdrawEvent
+  | AddPoolEvent;
+export type RelayerEvents = AckEvent | SetKeyEvent | ChargeEvent;
+export type UserArgs =
+  | SwapArgs
+  | SupplyArgs
+  | RetrieveArgs
+  | DepositArgs
+  | WithdrawArgs
+  | AddPoolArgs;
+export type RelayerArgs = AckArgs | SetKeyArgs | ChargeArgs;
 
-export interface BaseExtrinsic extends Block {
-  // All this data is obtainable for failed and successful extrinsics
-  extrinsicIndex: number;
-  extrinsicHash: string;
-  module: string;
-  method: string;
-  args: any; //TODO: type this
-  fee: string;
-  signer: string;
-}
-
-export interface ExtrinsicSuccess extends BaseExtrinsic {
-  //TODO: turn into custom transaction data such as ReqID etc...
-  data: any[]; // event data from extrinsic
-}
-
-export interface ExtrinsicFail extends BaseExtrinsic {
-  error: string; //Error message from the node
-}
-
-export interface DBExtrinsic<T, K> {
-  rid?: string; // Only successfull transactions will have a ReqID
+//Types for storing in mongodb, T represents Input/Arg types and K represents Output/Event types
+export interface DBExtrinsic<T, K = undefined> {
+  rid?: number; // Only successfull transactions will have a ReqID
   blockNumber: number;
   extrinsicIndex: number;
-  txId: string; // extrinsicId + blockNumber (formatted maybe such as 1234-5678)
   signer: string; //L2 address of the signer
+  accountIndex?: number; //L2 account index of the signer - only emitted from events
   command: string; // Command name
   args: T; // Command arguments (inputs)
   fee: string; // Fee paid for the transaction
@@ -67,7 +62,13 @@ export interface DBExtrinsic<T, K> {
 
 //Use this function to parse input args, and store in the correct formatting for mongodb
 function parseArgs(method: string, args: any[]) {
-  if (method === "swap") {
+  if (method === "charge") {
+    return {
+      l2Address: args[0],
+      amount: args[1],
+      l1_tx_hash: args[2],
+    } as ChargeArgs;
+  } else if (method === "swap") {
     return {
       signature: args[0],
       poolIndex: args[1],
@@ -138,43 +139,55 @@ function parseData(method: string, data: any[]) {
     nonce: data[4],
     accountIndex: data[5],
   };
-  if (method === "swap") {
-    let parsedData = { ...baseData } as SwapEvent;
-    parsedData.poolIndex = data[6];
-    parsedData.reverse = data[7];
-    parsedData.amount = data[8];
-    return parsedData;
+  if (method === "charge") {
+    return {
+      relayerAddress: data[0],
+      amount: data[1],
+      blockNumber: data[2],
+    } as ChargeEvent; // Does not extend base event
+  } else if (method === "swap") {
+    return {
+      ...baseData,
+      poolIndex: data[6],
+      reverse: data[7],
+      amount: data[8],
+    } as SwapEvent;
   } else if (method === "poolSupply") {
-    let parsedData = { ...baseData } as SupplyEvent;
-    parsedData.poolIndex = data[6];
-    parsedData.amount0 = data[7];
-    parsedData.amount1 = data[8];
-    return parsedData;
+    return {
+      ...baseData,
+      poolIndex: data[6],
+      amount0: data[7],
+      amount1: data[8],
+    } as SupplyEvent;
   } else if (method === "poolRetrieve") {
-    let parsedData = { ...baseData } as RetrieveEvent;
-    parsedData.poolIndex = data[6];
-    parsedData.amount0 = data[7];
-    parsedData.amount1 = data[8];
-    return parsedData;
+    return {
+      ...baseData,
+      poolIndex: data[6],
+      amount0: data[7],
+      amount1: data[8],
+    } as RetrieveEvent;
   } else if (method === "deposit") {
-    let parsedData = { ...baseData } as DepositEvent;
-    parsedData.tokenIndex = data[6];
-    parsedData.amount = data[7];
-    parsedData.reserveU256 = data[8];
-    parsedData.relayer = data[9];
-    return parsedData;
+    return {
+      ...baseData,
+      tokenIndex: data[6],
+      amount: data[7],
+      reserveU256: data[8],
+      relayer: data[9],
+    } as DepositEvent;
   } else if (method === "withdraw") {
-    let parsedData = { ...baseData } as WithdrawEvent;
-    parsedData.tokenIndex = data[6];
-    parsedData.amount = data[7];
-    parsedData.l1Account = data[8];
-    return parsedData;
+    return {
+      ...baseData,
+      tokenIndex: data[6],
+      amount: data[7],
+      l1Account: data[8],
+    } as WithdrawEvent;
   } else if (method === "setKey") {
-    let parsedData = { ...baseData } as SetKeyEvent;
-    parsedData.reserved = data[6];
-    parsedData.x = data[7];
-    parsedData.y = data[8];
-    return parsedData;
+    return {
+      ...baseData,
+      reserved: data[6],
+      x: data[7],
+      y: data[8],
+    } as SetKeyEvent;
   } else if (method === "addPool") {
     let parsedData: AddPoolEvent = {
       reqId: data[0],
@@ -186,7 +199,7 @@ function parseData(method: string, data: any[]) {
       tokenIndex1: data[6],
       reserve0: data[7],
       poolIndex: data[8],
-      sender: data[9],
+      accountIndex: data[9],
     };
     return parsedData;
   } else if (method === "ack") {
@@ -196,7 +209,57 @@ function parseData(method: string, data: any[]) {
     };
     return parsedData;
   } else {
-    throw new Error("Untracked or invalid method found in extrinsic");
+    //Maybe throw error if unhandled method
+    console.log("Untracked or invalid method found in extrinsic: ", method);
+    return data;
+  }
+}
+
+function extrinsicToDbExtrinsic(extrinsic: ExtrinsicSuccess | ExtrinsicFail) {
+  let parsedArgs = parseArgs(extrinsic.method, extrinsic.args);
+  //handle error scenario
+  if ("error" in extrinsic) {
+    return {
+      blockNumber: extrinsic.blockNumber,
+      extrinsicIndex: extrinsic.extrinsicIndex,
+      signer: extrinsic.signer,
+      command: extrinsic.method,
+      args: parsedArgs,
+      fee: extrinsic.fee,
+      timestamp: extrinsic.timestamp,
+      error: extrinsic.error,
+    } as DBExtrinsic<UserArgs | RelayerArgs>; //data property is undefined on an error due to lack of event emitted.
+  }
+
+  let parsedData = parseData(extrinsic.method, extrinsic.data);
+  //handle successful user scenario
+  if ("reqId" in parsedData) {
+    return {
+      rid: parsedData.reqId,
+      blockNumber: extrinsic.blockNumber,
+      extrinsicIndex: extrinsic.extrinsicIndex,
+      signer: extrinsic.signer,
+      command: extrinsic.method,
+      accountIndex: parsedData.accountIndex,
+      args: parsedArgs,
+      fee: extrinsic.fee,
+      timestamp: extrinsic.timestamp,
+      data: parsedData,
+    } as DBExtrinsic<UserArgs, UserEvents>;
+  }
+
+  //handle successful relayer scenario (ack, charge, setKey), which do not have a reqId
+  else {
+    return {
+      blockNumber: extrinsic.blockNumber,
+      extrinsicIndex: extrinsic.extrinsicIndex,
+      signer: extrinsic.signer,
+      command: extrinsic.method,
+      args: parsedArgs,
+      fee: extrinsic.fee,
+      timestamp: extrinsic.timestamp,
+      data: parsedData,
+    } as DBExtrinsic<RelayerArgs, RelayerEvents>;
   }
 }
 
@@ -207,10 +270,17 @@ export class EventRecorderDB extends DBHelper {
   }
   //TODO: use updated saveEvent function to store all tx info
   //create types for events and extrinsics
-  async saveEvent(transactions: (ExtrinsicSuccess | ExtrinsicFail)[]) {
+  async saveEvent(
+    transactions: DBExtrinsic<
+      UserArgs | RelayerArgs,
+      UserEvents | RelayerEvents | undefined
+    >[]
+  ) {
     const { blockNumber, extrinsicIndex } = transactions[0];
     const collection = await this.getOrCreateEventCollection("l2_transactions");
 
+    //Check if the block already exists
+    //TODO: this will not work if a block is only half synchronised
     let r = await collection.findOne({
       blockNumber: blockNumber,
       extrinsicIndex: extrinsicIndex,
@@ -259,13 +329,13 @@ export async function eventRecorder(
 ) {
   const uri = await getL2EventRecorderDbUri();
   //TODO: Parse transaction data into DB format with DBExtrinsic Type
-
+  let txs = transactions.map((tx) => extrinsicToDbExtrinsic(tx));
   await withDBHelper(
     EventRecorderDB,
     uri,
     "substrate",
     async (db: EventRecorderDB) => {
-      await db.saveEvent(transactions);
+      await db.saveEvent(txs);
     }
   );
 }
