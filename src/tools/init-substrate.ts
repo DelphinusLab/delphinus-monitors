@@ -22,7 +22,7 @@ async function main() {
     process.exit(-1);
   }
 
-  configs.forEach((config, i) => {
+  configs.forEach((config:any, i:any) => {
     withL2Client(
       config.l2Account,
       async (l2client: SubstrateClient) => {
