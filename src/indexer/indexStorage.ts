@@ -29,21 +29,26 @@ import {
   ChargeEvent,
 } from "./types";
 
+//User Events are ones containing a reqId for the operation
 export type UserEvents =
+  | SetKeyEvent
+  | DepositEvent
+  | SwapEvent
   | SupplyEvent
   | RetrieveEvent
-  | DepositEvent
   | WithdrawEvent
   | AddPoolEvent;
-export type RelayerEvents = AckEvent | SetKeyEvent | ChargeEvent;
+//Relayer events are ones that do not contain a reqId for the operation
+export type RelayerEvents = AckEvent | ChargeEvent;
 export type UserArgs =
+  | SetKeyArgs
+  | DepositArgs
   | SwapArgs
   | SupplyArgs
   | RetrieveArgs
-  | DepositArgs
   | WithdrawArgs
   | AddPoolArgs;
-export type RelayerArgs = AckArgs | SetKeyArgs | ChargeArgs;
+export type RelayerArgs = AckArgs | ChargeArgs;
 
 //Types for storing in mongodb, T represents Input/Arg types and K represents Output/Event types
 export interface DBExtrinsic<T, K = undefined> {
@@ -231,6 +236,7 @@ function extrinsicToDbExtrinsic(extrinsic: ExtrinsicSuccess | ExtrinsicFail) {
     } as DBExtrinsic<UserArgs | RelayerArgs>; //data property is undefined on an error due to lack of event emitted.
   }
 
+  //parse the data if extrinsic is non-error
   let parsedData = parseData(extrinsic.method, extrinsic.data);
   //handle successful user scenario
   if ("reqId" in parsedData) {
@@ -248,7 +254,7 @@ function extrinsicToDbExtrinsic(extrinsic: ExtrinsicSuccess | ExtrinsicFail) {
     } as DBExtrinsic<UserArgs, UserEvents>;
   }
 
-  //handle successful relayer scenario (ack, charge, setKey), which do not have a reqId
+  //handle successful relayer scenario (ack, charge), which do not have a reqId
   else {
     return {
       blockNumber: extrinsic.blockNumber,
@@ -268,9 +274,8 @@ export class EventRecorderDB extends DBHelper {
     const collection = await this.getOrCreateEventCollection("l2_transactions");
     await collection.drop();
   }
-  //TODO: use updated saveEvent function to store all tx info
-  //create types for events and extrinsics
-  async saveEvent(
+
+  async saveTransactions(
     transactions: DBExtrinsic<
       UserArgs | RelayerArgs,
       UserEvents | RelayerEvents | undefined
@@ -328,14 +333,14 @@ export async function eventRecorder(
   transactions: (ExtrinsicFail | ExtrinsicSuccess)[]
 ) {
   const uri = await getL2EventRecorderDbUri();
-  //TODO: Parse transaction data into DB format with DBExtrinsic Type
+
   let txs = transactions.map((tx) => extrinsicToDbExtrinsic(tx));
   await withDBHelper(
     EventRecorderDB,
     uri,
     "substrate",
     async (db: EventRecorderDB) => {
-      await db.saveEvent(txs);
+      await db.saveTransactions(txs);
     }
   );
 }

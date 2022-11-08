@@ -6,7 +6,7 @@ import { cryptoWaitReady } from "@polkadot/util-crypto";
 
 import { getSubstrateNodeConfig } from "delphinus-deployment/src/config";
 import { SwapHelper } from "delphinus-l2-client-helper/src/swap";
-import { ExtrinsicSuccess, ExtrinsicFail } from "../indexer/indexStorage";
+import { ExtrinsicSuccess, ExtrinsicFail } from "../indexer/types";
 import * as types from "delphinus-l2-client-helper/src/swap-types.json";
 import * as DelphinusCrypto from "delphinus-crypto/node/pkg/delphinus_crypto";
 
@@ -231,7 +231,7 @@ export class SubstrateClient extends SubstrateQueryClient {
   public async syncBlockExtrinsics(
     from: number = 0,
     to: number = from
-  ): Promise<(ExtrinsicSuccess | ExtrinsicFail)[] > {
+  ): Promise<(ExtrinsicSuccess | ExtrinsicFail)[]> {
     const api = await this.getAPI();
     //Change this j = blockNumber to any number in development to track manually
     //TODO: use @param from to sync from latest in DB if needed
@@ -281,7 +281,7 @@ export class SubstrateClient extends SubstrateQueryClient {
             // console.log("event:", event.toHuman(), "\n");
             // console.log("event transaction:", secondary.toHuman(), "\n");
 
-            //loop each event to check (maybe filter for swap module only) 
+            //loop each event to check (maybe filter for swap module only)
             //For example, creating a new account will emit 4 events (system.newAccount, balances.endowed, swapModule.rewardfunds and system.ExtrinsicSuccess)
             events.forEach(({ event: { data, method, section } }, eIndex) => {
               let types = events[eIndex].event.typeDef;
@@ -307,7 +307,7 @@ export class SubstrateClient extends SubstrateQueryClient {
             //return information about extrinsic and event
 
             //convert args into usable strings
-            
+
             const success: ExtrinsicSuccess = {
               blockNumber: j, //block number
               blockHash: currBlockhash.toHex(), //block hash
