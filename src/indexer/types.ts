@@ -36,14 +36,14 @@ export interface BaseEvent {
   sig2: string;
   sig3: string;
   nonce: number;
-  accountIndex: number; // user account index
 }
 /* SetKey args */
 export interface SetKeyArgs {
   key: string;
 }
 export interface SetKeyEvent extends BaseEvent {
-  reserved: string;
+  accountIndex: number;
+  reserveU32: string;
   x: string;
   y: string;
 }
@@ -70,10 +70,11 @@ export interface DepositArgs {
 }
 
 export interface DepositEvent extends BaseEvent {
+  accountIndex: number; //user account index
   tokenIndex: string;
   amount: string;
   reserveU256: number;
-  relayer: number; // relayer account index
+  callerAccountIndex: number; // relayer account index
 }
 /* Withdraw function inputs and output data */
 export interface WithdrawArgs {
@@ -85,6 +86,7 @@ export interface WithdrawArgs {
 }
 //TODO: Need to record L1 transaction hash
 export interface WithdrawEvent extends BaseEvent {
+  accountIndex: number; //user account index
   tokenIndex: number;
   amount: string;
   l1Account: string; // L1 address withdrawn to
@@ -99,6 +101,7 @@ export interface SwapArgs {
 }
 
 export interface SwapEvent extends BaseEvent {
+  accountIndex: number;
   poolIndex: number;
   reverse: number;
   amount: string;
@@ -114,6 +117,7 @@ export interface SupplyArgs {
 }
 
 export interface SupplyEvent extends BaseEvent {
+  accountIndex: number;
   poolIndex: number;
   amount0: string;
   amount1: string;
@@ -128,6 +132,7 @@ export interface RetrieveArgs {
 }
 
 export interface RetrieveEvent extends BaseEvent {
+  accountIndex: number;
   poolIndex: number;
   amount0: string;
   amount1: string;
@@ -149,9 +154,10 @@ export interface AddPoolEvent extends BaseEvent {
   nonce: number;
   tokenIndex0: number;
   tokenIndex1: number;
-  reserve0: string;
+  reserve_0: string;
+  reserve_1: string;
   poolIndex: number;
-  accountIndex: number; //account which added the pool, currently admin account only
+  callerAccountIndex: number; //account which added the pool, currently admin account only
 }
 
 /* Ack args */
