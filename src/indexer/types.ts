@@ -36,13 +36,13 @@ export interface BaseEvent {
   sig2: string;
   sig3: string;
   nonce: number;
-  accountIndex: number; // user account index
 }
 /* SetKey args */
 export interface SetKeyArgs {
   key: string;
 }
 export interface SetKeyEvent extends BaseEvent {
+  accountIndex: number;
   reserved: string;
   x: string;
   y: string;
@@ -73,7 +73,8 @@ export interface DepositEvent extends BaseEvent {
   tokenIndex: string;
   amount: string;
   reserveU256: number;
-  relayer: number; // relayer account index
+  callerAccountIndex: number; // relayer account index
+  accountIndex: number; //user account index
 }
 /* Withdraw function inputs and output data */
 export interface WithdrawArgs {
@@ -88,6 +89,7 @@ export interface WithdrawEvent extends BaseEvent {
   tokenIndex: number;
   amount: string;
   l1Account: string; // L1 address withdrawn to
+  accountIndex: number; //user account index
 }
 /* Swap function inputs and output data */
 export interface SwapArgs {
@@ -102,6 +104,7 @@ export interface SwapEvent extends BaseEvent {
   poolIndex: number;
   reverse: number;
   amount: string;
+  accountIndex: number;
 }
 
 /* PoolSupply function inputs and output data */
@@ -117,6 +120,7 @@ export interface SupplyEvent extends BaseEvent {
   poolIndex: number;
   amount0: string;
   amount1: string;
+  accountIndex: number;
 }
 /* Currently retrieve is same as supply args, maybe can place into one type */
 export interface RetrieveArgs {
@@ -131,6 +135,7 @@ export interface RetrieveEvent extends BaseEvent {
   poolIndex: number;
   amount0: string;
   amount1: string;
+  accountIndex: number;
 }
 
 /* AddPool args */
@@ -151,7 +156,7 @@ export interface AddPoolEvent extends BaseEvent {
   tokenIndex1: number;
   reserve0: string;
   poolIndex: number;
-  accountIndex: number; //account which added the pool, currently admin account only
+  callerAccountIndex: number; //account which added the pool, currently admin account only
 }
 
 /* Ack args */
