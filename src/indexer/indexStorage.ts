@@ -210,7 +210,7 @@ function parseData(method: string, data: any[]) {
     let setKeyData: SetKeyEvent = {
       ...baseData,
       accountIndex: data[5],
-      reserved: data[6],
+      reserveU32: data[6],
       x: data[7],
       y: data[8],
     };
@@ -224,9 +224,10 @@ function parseData(method: string, data: any[]) {
       nonce: data[4],
       tokenIndex0: data[5],
       tokenIndex1: data[6],
-      reserve0: data[7],
-      poolIndex: data[8],
-      callerAccountIndex: data[9],
+      reserve_0: data[7],
+      reserve_1: data[8],
+      poolIndex: data[9],
+      callerAccountIndex: data[10],
     };
     return parsedData;
   } else if (method === "ack") {

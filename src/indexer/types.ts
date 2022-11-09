@@ -43,7 +43,7 @@ export interface SetKeyArgs {
 }
 export interface SetKeyEvent extends BaseEvent {
   accountIndex: number;
-  reserved: string;
+  reserveU32: string;
   x: string;
   y: string;
 }
@@ -70,11 +70,11 @@ export interface DepositArgs {
 }
 
 export interface DepositEvent extends BaseEvent {
+  accountIndex: number; //user account index
   tokenIndex: string;
   amount: string;
   reserveU256: number;
   callerAccountIndex: number; // relayer account index
-  accountIndex: number; //user account index
 }
 /* Withdraw function inputs and output data */
 export interface WithdrawArgs {
@@ -86,10 +86,10 @@ export interface WithdrawArgs {
 }
 //TODO: Need to record L1 transaction hash
 export interface WithdrawEvent extends BaseEvent {
+  accountIndex: number; //user account index
   tokenIndex: number;
   amount: string;
   l1Account: string; // L1 address withdrawn to
-  accountIndex: number; //user account index
 }
 /* Swap function inputs and output data */
 export interface SwapArgs {
@@ -101,10 +101,10 @@ export interface SwapArgs {
 }
 
 export interface SwapEvent extends BaseEvent {
+  accountIndex: number;
   poolIndex: number;
   reverse: number;
   amount: string;
-  accountIndex: number;
 }
 
 /* PoolSupply function inputs and output data */
@@ -117,10 +117,10 @@ export interface SupplyArgs {
 }
 
 export interface SupplyEvent extends BaseEvent {
+  accountIndex: number;
   poolIndex: number;
   amount0: string;
   amount1: string;
-  accountIndex: number;
 }
 /* Currently retrieve is same as supply args, maybe can place into one type */
 export interface RetrieveArgs {
@@ -132,10 +132,10 @@ export interface RetrieveArgs {
 }
 
 export interface RetrieveEvent extends BaseEvent {
+  accountIndex: number;
   poolIndex: number;
   amount0: string;
   amount1: string;
-  accountIndex: number;
 }
 
 /* AddPool args */
@@ -154,7 +154,8 @@ export interface AddPoolEvent extends BaseEvent {
   nonce: number;
   tokenIndex0: number;
   tokenIndex1: number;
-  reserve0: string;
+  reserve_0: string;
+  reserve_1: string;
   poolIndex: number;
   callerAccountIndex: number; //account which added the pool, currently admin account only
 }
