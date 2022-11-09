@@ -68,69 +68,80 @@ export interface DBExtrinsic<T, K = undefined> {
 //Use this function to parse input args, and store in the correct formatting for mongodb
 function parseArgs(method: string, args: any[]) {
   if (method === "charge") {
-    return {
+    let chargeArgs: ChargeArgs = {
       l2Address: args[0],
       amount: args[1],
       l1_tx_hash: args[2],
-    } as ChargeArgs;
+    };
+    return chargeArgs;
   } else if (method === "swap") {
-    return {
+    let swapArgs: SwapArgs = {
       signature: args[0],
       poolIndex: args[1],
       reverse: args[2],
       amount: args[3],
       nonce: args[4],
-    } as SwapArgs;
+    };
+    return swapArgs;
   } else if (method === "poolSupply") {
-    return {
+    let supplyArgs: SupplyArgs = {
       signature: args[0],
       poolIndex: args[1],
       amount0: args[2],
       amount1: args[3],
       nonce: args[4],
-    } as SupplyArgs;
+    };
+    return supplyArgs;
   } else if (method === "poolRetrieve") {
-    return {
+    let retrieveArgs: RetrieveArgs = {
       signature: args[0],
       poolIndex: args[1],
       amount0: args[2],
       amount1: args[3],
       nonce: args[4],
-    } as RetrieveArgs;
+    };
+    return retrieveArgs;
   } else if (method === "deposit") {
-    return {
+    let depositArgs: DepositArgs = {
       signature: args[0],
       accountIndex: args[1],
       tokenIndex: args[2],
       amount: args[3],
       l1_tx_hash: args[4],
       nonce: args[5],
-    } as DepositArgs;
+    };
+    return depositArgs;
   } else if (method === "withdraw") {
-    return {
+    let withdrawArgs: WithdrawArgs = {
       signature: args[0],
       tokenIndex: args[1],
       amount: args[2],
       l1Account: args[3],
       nonce: args[4],
-    } as WithdrawArgs;
+    };
+    return withdrawArgs;
   } else if (method === "setKey") {
-    return {
+    let setKeyArgs: SetKeyArgs = {
       key: args[0],
-    } as SetKeyArgs;
+    };
+    return setKeyArgs;
   } else if (method === "addPool") {
-    return {
+    let addPoolArgs: AddPoolArgs = {
       signature: args[0],
       tokenIndex0: args[1],
       tokenIndex1: args[2],
       nonce: args[3],
-    } as AddPoolArgs;
+    };
+    return addPoolArgs;
   } else if (method === "ack") {
-    return {
+    let ackArgs: AckArgs = {
       reqIdStart: args[0],
-    } as AckArgs;
+    };
+    return ackArgs;
   } else {
-    throw new Error("Untracked or invalid method found in extrinsic");
+    //TODO: handle this scenario, this may occur if trying to record non swapModule extrinsics
+    console.log("Untracked or invalid method found in extrinsic: ", method);
+    return args;
   }
 }
 
@@ -142,7 +153,6 @@ function parseData(method: string, data: any[]) {
     sig2: data[2],
     sig3: data[3],
     nonce: data[4],
-    accountIndex: data[5],
   };
   if (method === "charge") {
     return {
@@ -151,48 +161,60 @@ function parseData(method: string, data: any[]) {
       blockNumber: data[2],
     } as ChargeEvent; // Does not extend base event
   } else if (method === "swap") {
-    return {
+    let swapData: SwapEvent = {
       ...baseData,
+      accountIndex: data[5],
       poolIndex: data[6],
       reverse: data[7],
       amount: data[8],
-    } as SwapEvent;
+    };
+    return swapData;
   } else if (method === "poolSupply") {
-    return {
+    let supplyData: SupplyEvent = {
       ...baseData,
+      accountIndex: data[5],
       poolIndex: data[6],
       amount0: data[7],
       amount1: data[8],
-    } as SupplyEvent;
+    };
+    return supplyData;
   } else if (method === "poolRetrieve") {
-    return {
+    let retrieveData: RetrieveEvent = {
       ...baseData,
+      accountIndex: data[5],
       poolIndex: data[6],
       amount0: data[7],
       amount1: data[8],
-    } as RetrieveEvent;
+    };
+    return retrieveData;
   } else if (method === "deposit") {
-    return {
+    let depositData: DepositEvent = {
       ...baseData,
+      accountIndex: data[5],
       tokenIndex: data[6],
       amount: data[7],
       reserveU256: data[8],
-      relayer: data[9],
-    } as DepositEvent;
+      callerAccountIndex: data[9],
+    };
+    return depositData;
   } else if (method === "withdraw") {
-    return {
+    let withdrawData: WithdrawEvent = {
       ...baseData,
+      accountIndex: data[5],
       tokenIndex: data[6],
       amount: data[7],
       l1Account: data[8],
-    } as WithdrawEvent;
+    };
+    return withdrawData;
   } else if (method === "setKey") {
-    return {
+    let setKeyData: SetKeyEvent = {
       ...baseData,
+      accountIndex: data[5],
       reserved: data[6],
       x: data[7],
       y: data[8],
-    } as SetKeyEvent;
+    };
+    return setKeyData;
   } else if (method === "addPool") {
     let parsedData: AddPoolEvent = {
       reqId: data[0],
@@ -204,7 +226,7 @@ function parseData(method: string, data: any[]) {
       tokenIndex1: data[6],
       reserve0: data[7],
       poolIndex: data[8],
-      accountIndex: data[9],
+      callerAccountIndex: data[9],
     };
     return parsedData;
   } else if (method === "ack") {
@@ -214,6 +236,7 @@ function parseData(method: string, data: any[]) {
     };
     return parsedData;
   } else {
+    //TODO: handle this scenario, this may occur if trying to record non swapModule extrinsics
     //Maybe throw error if unhandled method
     console.log("Untracked or invalid method found in extrinsic: ", method);
     return data;
@@ -224,48 +247,67 @@ function extrinsicToDbExtrinsic(extrinsic: ExtrinsicSuccess | ExtrinsicFail) {
   let parsedArgs = parseArgs(extrinsic.method, extrinsic.args);
   //handle error scenario
   if ("error" in extrinsic) {
-    return {
+    let errorExtrinsic: DBExtrinsic<UserArgs | RelayerArgs> = {
       blockNumber: extrinsic.blockNumber,
       extrinsicIndex: extrinsic.extrinsicIndex,
       signer: extrinsic.signer,
       command: extrinsic.method,
-      args: parsedArgs,
+      args: parsedArgs as UserArgs | RelayerArgs,
       fee: extrinsic.fee,
       timestamp: extrinsic.timestamp,
       error: extrinsic.error,
-    } as DBExtrinsic<UserArgs | RelayerArgs>; //data property is undefined on an error due to lack of event emitted.
+    };
+    return errorExtrinsic; //data property is undefined on an error due to lack of event emitted.
   }
 
   //parse the data if extrinsic is non-error
   let parsedData = parseData(extrinsic.method, extrinsic.data);
   //handle successful user scenario
   if ("reqId" in parsedData) {
-    return {
+    //AddPool will use callerAccountIndex, all other events will use accountIndex
+    if ("accountIndex" in parsedData) {
+      let userExtrinsic: DBExtrinsic<UserArgs, UserEvents> = {
+        rid: parsedData.reqId,
+        blockNumber: extrinsic.blockNumber,
+        extrinsicIndex: extrinsic.extrinsicIndex,
+        signer: extrinsic.signer,
+        command: extrinsic.method,
+        accountIndex: parsedData.accountIndex,
+        args: parsedArgs as UserArgs,
+        fee: extrinsic.fee,
+        timestamp: extrinsic.timestamp,
+        data: parsedData,
+      };
+      return userExtrinsic;
+    }
+    let addPoolExtrinsic: DBExtrinsic<AddPoolArgs, AddPoolEvent> = {
       rid: parsedData.reqId,
       blockNumber: extrinsic.blockNumber,
       extrinsicIndex: extrinsic.extrinsicIndex,
       signer: extrinsic.signer,
       command: extrinsic.method,
-      accountIndex: parsedData.accountIndex,
-      args: parsedArgs,
+      accountIndex: parsedData.callerAccountIndex,
+      args: parsedArgs as AddPoolArgs,
       fee: extrinsic.fee,
       timestamp: extrinsic.timestamp,
       data: parsedData,
-    } as DBExtrinsic<UserArgs, UserEvents>;
+    };
+    return addPoolExtrinsic;
   }
 
   //handle successful relayer scenario (ack, charge), which do not have a reqId
   else {
-    return {
+    let relayerExtrinsic: DBExtrinsic<RelayerArgs, RelayerEvents> = {
       blockNumber: extrinsic.blockNumber,
       extrinsicIndex: extrinsic.extrinsicIndex,
       signer: extrinsic.signer,
       command: extrinsic.method,
-      args: parsedArgs,
+      args: parsedArgs as RelayerArgs,
       fee: extrinsic.fee,
       timestamp: extrinsic.timestamp,
-      data: parsedData,
-    } as DBExtrinsic<RelayerArgs, RelayerEvents>;
+      data: parsedData as RelayerEvents,
+    };
+    return relayerExtrinsic;
   }
 }
 
