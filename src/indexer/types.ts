@@ -105,6 +105,7 @@ export interface SwapEvent extends BaseEvent {
   poolIndex: number;
   reverse: number;
   amount: string;
+  result_amount: string;
 }
 
 /* PoolSupply function inputs and output data */
