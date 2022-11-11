@@ -167,6 +167,7 @@ function parseData(method: string, data: any[]) {
       poolIndex: data[6],
       reverse: data[7],
       amount: data[8],
+      result_amount: data[9],
     };
     return swapData;
   } else if (method === "poolSupply") {
