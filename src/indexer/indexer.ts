@@ -10,6 +10,9 @@ import { ExtrinsicSuccess, ExtrinsicFail } from "./types";
 async function main() {
   //sync up to latest blocks, and then start listening for new events
   //get latest block stored in DB
+  if (process.argv[2] === "new") {
+    await clearDb();
+  }
   //await clearDb(); //Use this to drop the collection (for testing)
   //issue is if there are no transactions for while, it will resync from latest tx not latest block
   //so perhaps store latest block or just record all blocks regardless of TX

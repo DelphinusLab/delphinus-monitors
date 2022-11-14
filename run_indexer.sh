@@ -1,1 +1,1 @@
-node --unhandled-rejections=strict src/indexer/indexer.js 
+node --unhandled-rejections=strict src/indexer/indexer.js $1
