@@ -254,6 +254,8 @@ function extrinsicToDbExtrinsic(extrinsic: ExtrinsicSuccess | ExtrinsicFail) {
       extrinsicIndex: extrinsic.extrinsicIndex,
       signer: extrinsic.signer,
       command: extrinsic.method,
+      accountIndex:
+        "accountIndex" in parsedArgs ? parsedArgs.accountIndex : undefined,
       args: parsedArgs as UserArgs | RelayerArgs,
       fee: extrinsic.fee,
       timestamp: extrinsic.timestamp,
