@@ -47,7 +47,7 @@ async function main() {
           let txs = await l2Client.syncBlockExtrinsics(i);
           console.log("tx:", txs);
           if (txs.length > 0) await eventRecorder(txs); //batch record for each block, insert all txs from a block at once
-          fs.writeFileSync("./latestBlock.txt", i.toString());
+          fs.writeFileSync(blockFilePath, i.toString());
         }
       }
     );
