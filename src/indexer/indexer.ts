@@ -1,5 +1,6 @@
 import { dataToBN, SubstrateClient, withL2Client } from "../substrate/client";
 import fs from "fs";
+import path from "path";
 import { eventRecorder, latestDbTx, clearDb } from "./indexStorage";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
@@ -9,19 +10,27 @@ async function main() {
   //get latest block stored in DB
 
   //clear the database,
+  let blockFilePath = path.join(__dirname, "lastBlock.txt");
   if (process.argv[2] === "new") {
+    console.log("Clearing database collection...");
     await clearDb();
-    fs.unlink("./lastBlock.txt", () => {});
+    fs.unlink(blockFilePath, (err) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      //file removed
+    });
   }
 
   let lastEntry = await latestDbTx();
   console.log("latestTransaction in DB:", lastEntry);
   //read a file with the latest block number otherwise create a new file
   let lastBlock = 1;
-  if (fs.existsSync("./latestBlock.txt")) {
-    lastBlock = parseInt(fs.readFileSync("./latestBlock.txt").toString());
+  if (fs.existsSync(blockFilePath)) {
+    lastBlock = parseInt(fs.readFileSync(blockFilePath).toString());
   } else {
-    fs.writeFileSync("./latestBlock.txt", "1");
+    fs.writeFileSync(blockFilePath, "1");
   }
   console.log("latestBlock in file:", lastBlock);
 
