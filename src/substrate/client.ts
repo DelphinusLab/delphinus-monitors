@@ -271,7 +271,15 @@ export class SubstrateClient extends SubstrateQueryClient {
         if (isSigned) {
           let parsedArgs = args.map((a) => a.toString());
           console.log(parsedArgs, "args");
-          const { event, phase } = events[0];
+          // find the correct swapModule event
+          //creating a new account will emit 4 events (system.newAccount, balances.endowed, swapModule.rewardfunds and system.ExtrinsicSuccess)
+          const swapEvent = events.find(
+            (e) => e.event.section === "swapModule"
+          );
+          if (!swapEvent) {
+            return [];
+          }
+          const { event } = swapEvent;
           console.log("block timestamp:", timestamp.toNumber());
           console.log("signer: ", signer.toString());
           if (!api.events.system.ExtrinsicFailed.is(event)) {

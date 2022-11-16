@@ -298,6 +298,19 @@ function extrinsicToDbExtrinsic(extrinsic: ExtrinsicSuccess | ExtrinsicFail) {
     };
     return addPoolExtrinsic;
   }
+  if (extrinsic.method === "charge") {
+    let chargeExtrinsic: DBExtrinsic<ChargeArgs, ChargeEvent> = {
+      blockNumber: extrinsic.blockNumber,
+      extrinsicIndex: extrinsic.extrinsicIndex,
+      signer: (parsedArgs as ChargeArgs).l2Address, // set Signer to user l2 address, even though tx is sent from relayer
+      command: extrinsic.method,
+      args: parsedArgs as ChargeArgs,
+      fee: extrinsic.fee,
+      timestamp: extrinsic.timestamp,
+      data: parsedData as ChargeEvent,
+    };
+    return chargeExtrinsic;
+  }
 
   //handle successful relayer scenario (ack, charge), which do not have a reqId
   else {
