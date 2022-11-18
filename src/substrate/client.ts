@@ -233,25 +233,16 @@ export class SubstrateClient extends SubstrateQueryClient {
     to: number = from
   ): Promise<(ExtrinsicSuccess | ExtrinsicFail)[]> {
     const api = await this.getAPI();
-    //Change this j = blockNumber to any number in development to track manually
-    //TODO: use @param from to sync from latest in DB if needed
-    //blockNumber = 140882; //-- fail
-    //blockNumber = 143207; //-- success
     let blockTransactions: (ExtrinsicFail | ExtrinsicSuccess)[] = [];
-    console.log("from: ", from);
     for (let j = from; j <= to; j++) {
-      console.log(`syncing block: ${j} \n`);
+      console.log(`Syncing block ${j}...`);
 
       const currBlockhash = await api.rpc.chain.getBlockHash(j);
       const currBlock = await api.rpc.chain.getBlock(currBlockhash);
       const timestamp = await api.query.timestamp.now.at(currBlockhash);
-      console.log("currBlockhash:", currBlockhash.toHex());
-
       const extrinsics = currBlock.block.extrinsics;
       const eventInfo = await api.query.system.events.at(currBlockhash);
 
-      console.log("found events:", eventInfo.length);
-      console.log("found extrinsics:", extrinsics.length);
       for (let i = 0; i < extrinsics.length; i++) {
         const ext = extrinsics[i];
         const events = eventInfo.filter(
@@ -269,6 +260,8 @@ export class SubstrateClient extends SubstrateQueryClient {
 
         //index signed transactions for now
         if (isSigned) {
+          console.log("found events:", eventInfo.length);
+          console.log("found extrinsics:", extrinsics.length);
           let parsedArgs = args.map((a) => a.toString());
           console.log(parsedArgs, "args");
           // find the correct swapModule event
