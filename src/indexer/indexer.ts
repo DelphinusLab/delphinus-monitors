@@ -23,8 +23,6 @@ async function main() {
     });
   }
 
-  let lastEntry = await latestDbTx();
-  console.log("latestTransaction in DB:", lastEntry);
   //read a file with the latest block number otherwise create a new file
   let lastBlock = 1;
   if (fs.existsSync(blockFilePath)) {
