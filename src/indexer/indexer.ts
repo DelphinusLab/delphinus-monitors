@@ -22,6 +22,7 @@ async function main() {
       //file removed
     });
   }
+
   //read a file with the latest block number otherwise create a new file
   let lastBlock = 1;
   if (fs.existsSync(blockFilePath)) {

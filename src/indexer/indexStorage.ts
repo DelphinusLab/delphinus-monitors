@@ -177,6 +177,7 @@ function parseData(method: string, data: any[]) {
       poolIndex: data[6],
       amount0: data[7],
       amount1: data[8],
+      shareChange: data[9],
     };
     return supplyData;
   } else if (method === "poolRetrieve") {
@@ -186,6 +187,7 @@ function parseData(method: string, data: any[]) {
       poolIndex: data[6],
       amount0: data[7],
       amount1: data[8],
+      shareChange: data[9],
     };
     return retrieveData;
   } else if (method === "deposit") {
