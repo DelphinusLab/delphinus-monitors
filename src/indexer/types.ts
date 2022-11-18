@@ -122,6 +122,7 @@ export interface SupplyEvent extends BaseEvent {
   poolIndex: number;
   amount0: string;
   amount1: string;
+  shareChange: string;
 }
 /* Currently retrieve is same as supply args, maybe can place into one type */
 export interface RetrieveArgs {
@@ -137,6 +138,7 @@ export interface RetrieveEvent extends BaseEvent {
   poolIndex: number;
   amount0: string;
   amount1: string;
+  shareChange: string;
 }
 
 /* AddPool args */
