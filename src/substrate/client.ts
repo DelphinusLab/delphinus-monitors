@@ -264,112 +264,79 @@ export class SubstrateClient extends SubstrateQueryClient {
           console.log("found extrinsics:", extrinsics.length);
           let parsedArgs = args.map((a) => a.toString());
           console.log(parsedArgs, "args");
-          // find the correct swapModule event
-          //creating a new account will emit 4 events (system.newAccount, balances.endowed, swapModule.rewardfunds and system.ExtrinsicSuccess)
-          const swapEvent = events.find(
-            (e) => e.event.section === "swapModule"
-          );
-          if (!swapEvent) {
-            return [];
-          }
-          const { event } = swapEvent;
-          console.log("block timestamp:", timestamp.toNumber());
-          console.log("signer: ", signer.toString());
-          if (!api.events.system.ExtrinsicFailed.is(event)) {
-            const { event: secondary } = events[events.length - 1]; // this contains the fee, (system.extrinsicSuccess)
+          //Loop through each event for this extrinsic
+          events.forEach(({ event }, index) => {
+            //Check for failed transactions here. Record
+            if (api.events.system.ExtrinsicFailed.is(event)) {
+              console.log("failed event");
+              const [dispatchError, dispatchInfo] = event.data;
+              console.log("extrinsic:", ext.toHuman(), "\n");
+              //This will show args of the extrinsic that failed (without origin param)
+              console.log(
+                `extrinsic error: ${section}.${method}(${args
+                  .map((a) => a.toString())
+                  .join(", ")})`
+              );
+              const fee = JSON.parse(dispatchInfo.toString()).weight.toString();
+              let errorInfo;
 
-            console.log("Successful event");
-            // console.log("event:", event.toHuman(), "\n");
-            // console.log("event transaction:", secondary.toHuman(), "\n");
+              // decode the error
+              if (dispatchError.isModule) {
+                // for module errors, we have the section indexed, lookup
+                // (For specific known errors, we can also do a check against the
+                // api.errors.<module>.<ErrorName>.is(dispatchError.asModule) guard)
+                const decoded = api.registry.findMetaError(
+                  dispatchError.asModule
+                );
 
-            //loop each event to check (maybe filter for swap module only)
-            //For example, creating a new account will emit 4 events (system.newAccount, balances.endowed, swapModule.rewardfunds and system.ExtrinsicSuccess)
-            events.forEach(({ event: { data, method, section } }, eIndex) => {
-              let types = events[eIndex].event.typeDef;
-              console.log(`\t' ${section}.${method}:: ${data}`);
-              // loop through each of the parameters, displaying the type and data
-              data.forEach((data, index) => {
+                errorInfo = `${decoded.section}.${decoded.name}`;
+              } else {
+                // Other, CannotLookup, BadOrigin, no extra info
+                errorInfo = dispatchError.toString();
+              }
+              console.log("errorInfo:", errorInfo);
+
+              //return information about extrinsic and event ERROR
+              const fail: ExtrinsicFail = {
+                blockNumber: j, //block number
+                blockHash: currBlockhash.toHex(), //block hash
+                extrinsicIndex: i, //index of extrinsic in block
+                extrinsicHash: ext.hash.toHex(), //tx hash
+                signer: signer.toString(),
+                module: section, //swap module
+                method: method, //function that was called
+                args: parsedArgs, //This is the input data
+                fee: fee,
+                timestamp: timestamp.toNumber(), //unix timestamp
+                error: errorInfo,
+              };
+              blockTransactions.push(fail);
+            } else if (event.section === "swapModule") {
+              const { event: secondary } = events[events.length - 1]; // this contains the fee, (system.extrinsicSuccess)
+              let types = events[index].event.typeDef;
+
+              event.data.forEach((data, index) => {
                 console.log(`\t\t\t${types[index].type}: ${data.toString()}`);
               });
-            });
 
-            let parsedData = event.data.map((a) => a.toString());
-            console.log(
-              "fee:",
-              JSON.parse(secondary.data[0].toString()).weight.toString()
-            );
-            // console.log(
-            //   `${section}.${method}(${args
-            //     .map((a) => a.toString())
-            //     .join(", ")})`
-            // ); //Extrinsic data
+              let parsedData = event.data.map((a) => a.toString());
 
-            //todo: parse and log events in DB
-            //return information about extrinsic and event
-
-            //convert args into usable strings
-
-            const success: ExtrinsicSuccess = {
-              blockNumber: j, //block number
-              blockHash: currBlockhash.toHex(), //block hash
-              extrinsicIndex: i, //index of extrinsic in block
-              extrinsicHash: ext.hash.toHex(), //tx hash
-              module: section, //swap module
-              method: method, //function that was called
-              signer: signer.toString(), //signer of tx - usually user however also can be monitor/relayer
-              args: parsedArgs, //This is the input data
-              data: parsedData, //this is the output data from the event
-              fee: JSON.parse(secondary.data[0].toString()).weight.toString(),
-              timestamp: timestamp.toNumber(), //unix timestamp
-            };
-            blockTransactions.push(success);
-          } else {
-            console.log("failed event");
-            const [dispatchError, dispatchInfo] = event.data;
-            console.log("extrinsic:", ext.toHuman(), "\n");
-            //This will show args of the extrinsic that failed (without origin param)
-            console.log(
-              `extrinsic error: ${section}.${method}(${args
-                .map((a) => a.toString())
-                .join(", ")})`
-            );
-            console.log("event:", event.toHuman(), "\n");
-            console.log("Tx Info :", dispatchInfo.toString());
-            const fee = JSON.parse(dispatchInfo.toString()).weight.toString();
-            let errorInfo;
-
-            // decode the error
-            if (dispatchError.isModule) {
-              // for module errors, we have the section indexed, lookup
-              // (For specific known errors, we can also do a check against the
-              // api.errors.<module>.<ErrorName>.is(dispatchError.asModule) guard)
-              const decoded = api.registry.findMetaError(
-                dispatchError.asModule
-              );
-
-              errorInfo = `${decoded.section}.${decoded.name}`;
-            } else {
-              // Other, CannotLookup, BadOrigin, no extra info
-              errorInfo = dispatchError.toString();
+              const success: ExtrinsicSuccess = {
+                blockNumber: j, //block number
+                blockHash: currBlockhash.toHex(), //block hash
+                extrinsicIndex: i, //index of extrinsic in block
+                extrinsicHash: ext.hash.toHex(), //tx hash
+                module: section, //swap module
+                method: method, //function that was called
+                signer: signer.toString(), //signer of tx - usually user however also can be monitor/relayer
+                args: parsedArgs, //This is the input data
+                data: parsedData, //this is the output data from the event
+                fee: JSON.parse(secondary.data[0].toString()).weight.toString(),
+                timestamp: timestamp.toNumber(), //unix timestamp
+              };
+              blockTransactions.push(success);
             }
-            console.log("errorInfo:", errorInfo);
-
-            //return information about extrinsic and event ERROR
-            const fail: ExtrinsicFail = {
-              blockNumber: j, //block number
-              blockHash: currBlockhash.toHex(), //block hash
-              extrinsicIndex: i, //index of extrinsic in block
-              extrinsicHash: ext.hash.toHex(), //tx hash
-              signer: signer.toString(),
-              module: section, //swap module
-              method: method, //function that was called
-              args: parsedArgs, //This is the input data
-              fee: fee,
-              timestamp: timestamp.toNumber(), //unix timestamp
-              error: errorInfo,
-            };
-            blockTransactions.push(fail);
-          }
+          });
         }
       }
     }

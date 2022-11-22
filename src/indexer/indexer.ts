@@ -14,13 +14,8 @@ async function main() {
   if (process.argv[2] === "new") {
     console.log("Clearing database collection...");
     await clearDb();
-    fs.unlink(blockFilePath, (err) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      //file removed
-    });
+    fs.unlinkSync(blockFilePath);
+    //file removed
   }
 
   //read a file with the latest block number otherwise create a new file
