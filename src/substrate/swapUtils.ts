@@ -2,7 +2,6 @@ import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 
 export async function handleReq<T>(kv: any[], fn: (rid: string, op: CommandOp, data: any[]) => T) {
   const rid = kv[0].toString();
-  console.log(`rid is ${rid}`);
 
   if (kv[1].value.isWithdraw) {
     await fn(rid, CommandOp.Withdraw, kv[1].value.asWithdraw);

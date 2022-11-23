@@ -342,6 +342,21 @@ export class SubstrateClient extends SubstrateQueryClient {
     }
     return blockTransactions;
   }
+  public async getAckMap() {
+    const api = await this.getAPI();
+    const rawMap = await api.query.swapModule.ackMap.entriesAt(
+      this.lastHeader.hash
+    );
+    const map = new Map(rawMap.map((kv) => [kv[0].args[0].toHex(), kv[1]]));
+    return map;
+  }
+
+  public async getAcks() {
+    const txMap = await this.getAckMap();
+    return Array.from(txMap.entries())
+      .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
+      .sort((kv1, kv2) => (kv1[0].sub(kv2[0]).isNeg() ? -1 : 1));
+  }
 
   public async getEvents(header: any) {
     const api = await this.getAPI();

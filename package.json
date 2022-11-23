@@ -12,6 +12,9 @@
     "@types/bn.js": "^5.1.0",
     "@types/fs-extra": "^9.0.12",
     "eslint": "^7.24.0",
+    "@types/jest": "^26.0.15",
+    "jest": "26.6.0",
+    "ts-jest": "^26.0.0",
     "typescript": "^4.3.4"
   },
   "dependencies": {
@@ -29,6 +32,7 @@
     "ss58": "^1.0.2",
     "substrate-ss58": "^1.0.3",
     "web3": "^1.5.3",
+    "console-stamp": "3.0.6",
     "web3subscriber": "*",
     "delphinus-deployment": "*",
     "delphinus-crypto": "*",
