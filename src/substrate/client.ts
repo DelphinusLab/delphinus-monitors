@@ -260,6 +260,22 @@ export class SubstrateClient extends SubstrateQueryClient {
 
         //index signed transactions for now
         if (isSigned) {
+          //https://polkadot.js.org/docs/substrate/rpc#queryinfoextrinsic-bytes-at-blockhash-runtimedispatchinfo
+          //https://docs.substrate.io/build/tx-weights-fees/
+
+          const feeInfo = await api.rpc.payment.queryInfo(
+            ext.toHex(),
+            currBlockhash
+          );
+
+          //partialFee contains the base fee and the length fee
+          //weight contains the additional weight fee.
+
+          const { weight, partialFee } = feeInfo;
+          console.log(feeInfo.toJSON());
+          const fee = partialFee.toBn().add(weight.toBn());
+
+          console.log("Transaction Fee: ", fee.toString());
           console.log("found events:", eventInfo.length);
           console.log("found extrinsics:", extrinsics.length);
           let parsedArgs = args.map((a) => a.toString());
@@ -277,7 +293,7 @@ export class SubstrateClient extends SubstrateQueryClient {
                   .map((a) => a.toString())
                   .join(", ")})`
               );
-              const fee = JSON.parse(dispatchInfo.toString()).weight.toString();
+
               let errorInfo;
 
               // decode the error
@@ -306,13 +322,12 @@ export class SubstrateClient extends SubstrateQueryClient {
                 module: section, //swap module
                 method: method, //function that was called
                 args: parsedArgs, //This is the input data
-                fee: fee,
+                fee: fee.toString(),
                 timestamp: timestamp.toNumber(), //unix timestamp
                 error: errorInfo,
               };
               blockTransactions.push(fail);
             } else if (event.section === "swapModule") {
-              const { event: secondary } = events[events.length - 1]; // this contains the fee, (system.extrinsicSuccess)
               let types = events[index].event.typeDef;
 
               event.data.forEach((data, index) => {
@@ -331,7 +346,7 @@ export class SubstrateClient extends SubstrateQueryClient {
                 signer: signer.toString(), //signer of tx - usually user however also can be monitor/relayer
                 args: parsedArgs, //This is the input data
                 data: parsedData, //this is the output data from the event
-                fee: JSON.parse(secondary.data[0].toString()).weight.toString(),
+                fee: fee.toString(),
                 timestamp: timestamp.toNumber(), //unix timestamp
               };
               blockTransactions.push(success);
