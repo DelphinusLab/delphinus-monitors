@@ -1,7 +1,12 @@
 import { dataToBN, SubstrateClient, withL2Client } from "../substrate/client";
 import fs from "fs";
 import path from "path";
-import { eventRecorder, latestDbTx, clearDb } from "./indexStorage";
+import {
+  eventRecorder,
+  latestBlock,
+  recordBlockNumber,
+  clearDb,
+} from "./indexStorage";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 
@@ -9,23 +14,17 @@ async function main() {
   //sync up to latest blocks, and then start listening for new events
   //get latest block stored in DB
 
-  //clear the database,
-  let blockFilePath = path.join(__dirname, "lastBlock.txt");
+  //clear the database and reset blocknumber,
   if (process.argv[2] === "new") {
     console.log("Clearing database collection...");
     await clearDb();
-    fs.unlinkSync(blockFilePath);
     //file removed
   }
 
   //read a file with the latest block number otherwise create a new file
-  let lastBlock = 1;
-  if (fs.existsSync(blockFilePath)) {
-    lastBlock = parseInt(fs.readFileSync(blockFilePath).toString());
-  } else {
-    fs.writeFileSync(blockFilePath, "1");
-  }
-  console.log("latestBlock in file:", lastBlock);
+  let lastBlock = await latestBlock();
+
+  console.log("latestBlock in mongodb:", lastBlock);
 
   try {
     console.log("starting l2 indexer");
@@ -42,7 +41,7 @@ async function main() {
             console.log("tx:", txs);
             await eventRecorder(txs); //batch record for each block, insert all txs from a block at once
           }
-          fs.writeFileSync(blockFilePath, i.toString());
+          await recordBlockNumber(i);
         }
       }
     );

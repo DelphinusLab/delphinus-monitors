@@ -331,6 +331,36 @@ function extrinsicToDbExtrinsic(extrinsic: ExtrinsicSuccess | ExtrinsicFail) {
 }
 
 export class EventRecorderDB extends DBHelper {
+  async recordBlockNumber(blockNumber: number) {
+    let blocknumber = await this.getOrCreateEventCollection("blocknumber");
+    const block = {
+      blockNumber: {
+        $exists: true,
+      },
+    };
+    //find the blocknumber document
+    //if it exists, update it
+    //if it doesn't exist, create it
+    let blockNumberDoc = await blocknumber.findOne(block);
+    if (blockNumberDoc) {
+      await blocknumber.updateOne(block, {
+        $set: {
+          blockNumber: blockNumber,
+        },
+      });
+    } else {
+      await blocknumber.insertOne(block);
+    }
+  }
+
+  async resetBlockNumber() {
+    let blocknumber = await this.getOrCreateEventCollection("blocknumber");
+    await blocknumber.deleteMany({});
+    await blocknumber.insertOne({
+      blockNumber: 0,
+    });
+  }
+
   async drop() {
     const collection = await this.getOrCreateEventCollection("l2_transactions");
     await collection.drop();
@@ -375,6 +405,17 @@ export class EventRecorderDB extends DBHelper {
       ])
       .toArray();
   }
+
+  async getLatestBlock() {
+    const collection = await this.getOrCreateEventCollection("blocknumber");
+    const block = await collection.findOne({
+      blockNumber: {
+        $exists: true,
+      },
+    });
+    return block ? block.blockNumber : 1;
+  }
+
   async getLatestEntry() {
     const collection = await this.getOrCreateEventCollection("l2_transactions");
     const r = await collection
@@ -390,6 +431,33 @@ export class EventRecorderDB extends DBHelper {
 /**
  * Record L2 Event in DB
  */
+
+export async function latestBlock() {
+  const uri = await getL2EventRecorderDbUri();
+
+  return await withDBHelper(
+    EventRecorderDB,
+    uri,
+    "substrate",
+    async (db: EventRecorderDB) => {
+      return await db.getLatestBlock();
+    }
+  );
+}
+
+export async function recordBlockNumber(blocknumber: number) {
+  const uri = await getL2EventRecorderDbUri();
+
+  return await withDBHelper(
+    EventRecorderDB,
+    uri,
+    "substrate",
+    async (db: EventRecorderDB) => {
+      return await db.recordBlockNumber(blocknumber);
+    }
+  );
+}
+
 export async function eventRecorder(
   transactions: (ExtrinsicFail | ExtrinsicSuccess)[]
 ) {
@@ -427,6 +495,7 @@ export async function clearDb() {
     "substrate",
     async (db: EventRecorderDB) => {
       const r = await db.drop();
+      await db.resetBlockNumber();
       return r;
     }
   );
