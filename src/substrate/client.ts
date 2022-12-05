@@ -6,7 +6,7 @@ import { cryptoWaitReady } from "@polkadot/util-crypto";
 
 import { getSubstrateNodeConfig } from "delphinus-deployment/src/config";
 import { SwapHelper } from "delphinus-l2-client-helper/src/swap";
-
+import { ExtrinsicSuccess, ExtrinsicFail } from "../indexer/types";
 import * as types from "delphinus-l2-client-helper/src/swap-types.json";
 import * as DelphinusCrypto from "delphinus-crypto/node/pkg/delphinus_crypto";
 
@@ -59,7 +59,7 @@ export class SubstrateQueryClient {
     const txMap = await this.getCompleteReqMap();
     return Array.from(txMap.entries())
       .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
-      .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
+      .sort((kv1, kv2) => (kv1[0].sub(kv2[0]).isNeg() ? -1 : 1));
   }
 }
 
@@ -102,9 +102,14 @@ export class SubstrateClient extends SubstrateQueryClient {
     const sudo = await this.getSudo();
 
     if (SubstrateClient.nonce.get(this.account) === undefined) {
-      SubstrateClient.nonce.set(this.account, new BN(
-        (await api.query.system.account((sudo as any).address)).nonce.toNumber()
-      ));
+      SubstrateClient.nonce.set(
+        this.account,
+        new BN(
+          (
+            await api.query.system.account((sudo as any).address)
+          ).nonce.toNumber()
+        )
+      );
     }
 
     const nonce = SubstrateClient.nonce.get(this.account)!;
@@ -134,15 +139,19 @@ export class SubstrateClient extends SubstrateQueryClient {
     console.log("current nonce in send:", nonce);
     await new Promise(async (resolve, reject) => {
       // TODO: handle error events
-      const unsub = await tx.signAndSend(sudo, { nonce }, ({ events = [], status }) => {
-        if (status.isFinalized) {
-          events.forEach(({ phase, event: { data, method, section } }) => {
-            console.log(`\t' ${phase}: ${section}.${method}:: ${data}`);
-          });
-          unsub();
-          resolve(undefined);
+      const unsub = await tx.signAndSend(
+        sudo,
+        { nonce },
+        ({ events = [], status }) => {
+          if (status.isFinalized) {
+            events.forEach(({ phase, event: { data, method, section } }) => {
+              console.log(`\t' ${phase}: ${section}.${method}:: ${data}`);
+            });
+            unsub();
+            resolve(undefined);
+          }
         }
-      });
+      );
     });
   }
 
@@ -159,7 +168,9 @@ export class SubstrateClient extends SubstrateQueryClient {
     const api = await this.getAPI();
     const sudo = await this.getSudo();
     const accountId = ss58.addressToAddressId((sudo as any).address);
-    const accountIndexOpt: any = await api.query.swapModule.accountIndexMap(account);
+    const accountIndexOpt: any = await api.query.swapModule.accountIndexMap(
+      account
+    );
     const l2nonce = await api.query.swapModule.nonceMap(accountId);
 
     if (accountIndexOpt.isNone) {
@@ -198,9 +209,8 @@ export class SubstrateClient extends SubstrateQueryClient {
     const txMap = await this.getPendingReqMap();
     return Array.from(txMap.entries())
       .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
-      .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
+      .sort((kv1, kv2) => (kv1[0].sub(kv2[0]).isNeg() ? -1 : 1));
   }
-
 
   public async getCompleteReqMap() {
     const api = await this.getAPI();
@@ -215,9 +225,138 @@ export class SubstrateClient extends SubstrateQueryClient {
     const txMap = await this.getCompleteReqMap();
     return Array.from(txMap.entries())
       .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
-      .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
+      .sort((kv1, kv2) => (kv1[0].sub(kv2[0]).isNeg() ? -1 : 1));
   }
 
+  public async syncBlockExtrinsics(
+    from: number = 0,
+    to: number = from
+  ): Promise<(ExtrinsicSuccess | ExtrinsicFail)[]> {
+    const api = await this.getAPI();
+    let blockTransactions: (ExtrinsicFail | ExtrinsicSuccess)[] = [];
+    for (let j = from; j <= to; j++) {
+      console.log(`Syncing block ${j}...`);
+
+      const currBlockhash = await api.rpc.chain.getBlockHash(j);
+      const currBlock = await api.rpc.chain.getBlock(currBlockhash);
+      const timestamp = await api.query.timestamp.now.at(currBlockhash);
+      const extrinsics = currBlock.block.extrinsics;
+      const eventInfo = await api.query.system.events.at(currBlockhash);
+
+      for (let i = 0; i < extrinsics.length; i++) {
+        const ext = extrinsics[i];
+        const events = eventInfo.filter(
+          ({ phase }) => phase.isApplyExtrinsic && phase.asApplyExtrinsic.eq(i)
+        );
+
+        //check success or fail event
+        //extrinsic within block
+
+        const {
+          isSigned,
+          signer,
+          method: { args, method, section },
+        } = ext;
+
+        //index signed transactions for now
+        if (isSigned) {
+          //https://polkadot.js.org/docs/substrate/rpc#queryinfoextrinsic-bytes-at-blockhash-runtimedispatchinfo
+          //https://docs.substrate.io/build/tx-weights-fees/
+
+          const feeInfo = await api.rpc.payment.queryInfo(
+            ext.toHex(),
+            currBlockhash
+          );
+
+          //partialFee contains the base fee and the length fee
+          //weight contains the additional weight fee.
+
+          const { weight, partialFee } = feeInfo;
+          console.log(feeInfo.toJSON());
+          const fee = partialFee.toBn().add(weight.toBn());
+
+          console.log("Transaction Fee: ", fee.toString());
+          console.log("found events:", eventInfo.length);
+          console.log("found extrinsics:", extrinsics.length);
+          let parsedArgs = args.map((a) => a.toString());
+          console.log(parsedArgs, "args");
+          //Loop through each event for this extrinsic
+          events.forEach(({ event }, index) => {
+            //Check for failed transactions here. Record
+            if (api.events.system.ExtrinsicFailed.is(event)) {
+              console.log("failed event");
+              const [dispatchError, dispatchInfo] = event.data;
+              console.log("extrinsic:", ext.toHuman(), "\n");
+              //This will show args of the extrinsic that failed (without origin param)
+              console.log(
+                `extrinsic error: ${section}.${method}(${args
+                  .map((a) => a.toString())
+                  .join(", ")})`
+              );
+
+              let errorInfo;
+
+              // decode the error
+              if (dispatchError.isModule) {
+                // for module errors, we have the section indexed, lookup
+                // (For specific known errors, we can also do a check against the
+                // api.errors.<module>.<ErrorName>.is(dispatchError.asModule) guard)
+                const decoded = api.registry.findMetaError(
+                  dispatchError.asModule
+                );
+
+                errorInfo = `${decoded.section}.${decoded.name}`;
+              } else {
+                // Other, CannotLookup, BadOrigin, no extra info
+                errorInfo = dispatchError.toString();
+              }
+              console.log("errorInfo:", errorInfo);
+
+              //return information about extrinsic and event ERROR
+              const fail: ExtrinsicFail = {
+                blockNumber: j, //block number
+                blockHash: currBlockhash.toHex(), //block hash
+                extrinsicIndex: i, //index of extrinsic in block
+                extrinsicHash: ext.hash.toHex(), //tx hash
+                signer: signer.toString(),
+                module: section, //swap module
+                method: method, //function that was called
+                args: parsedArgs, //This is the input data
+                fee: fee.toString(),
+                timestamp: timestamp.toNumber(), //unix timestamp
+                error: errorInfo,
+              };
+              blockTransactions.push(fail);
+            } else if (event.section === "swapModule") {
+              let types = events[index].event.typeDef;
+
+              event.data.forEach((data, index) => {
+                console.log(`\t\t\t${types[index].type}: ${data.toString()}`);
+              });
+
+              let parsedData = event.data.map((a) => a.toString());
+
+              const success: ExtrinsicSuccess = {
+                blockNumber: j, //block number
+                blockHash: currBlockhash.toHex(), //block hash
+                extrinsicIndex: i, //index of extrinsic in block
+                extrinsicHash: ext.hash.toHex(), //tx hash
+                module: section, //swap module
+                method: method, //function that was called
+                signer: signer.toString(), //signer of tx - usually user however also can be monitor/relayer
+                args: parsedArgs, //This is the input data
+                data: parsedData, //this is the output data from the event
+                fee: fee.toString(),
+                timestamp: timestamp.toNumber(), //unix timestamp
+              };
+              blockTransactions.push(success);
+            }
+          });
+        }
+      }
+    }
+    return blockTransactions;
+  }
   public async getAckMap() {
     const api = await this.getAPI();
     const rawMap = await api.query.swapModule.ackMap.entriesAt(
@@ -231,7 +370,7 @@ export class SubstrateClient extends SubstrateQueryClient {
     const txMap = await this.getAckMap();
     return Array.from(txMap.entries())
       .map((kv) => [dataToBN(kv[0]), kv[1]] as [BN, any])
-      .sort((kv1, kv2) => kv1[0].sub(kv2[0]).isNeg() ? -1 : 1);
+      .sort((kv1, kv2) => (kv1[0].sub(kv2[0]).isNeg() ? -1 : 1));
   }
 
   public async getEvents(header: any) {

@@ -120,7 +120,8 @@ async function main() {
     await checkDeployerAccountBalance(config, gasWarningAmount);
 
   } catch (e) {
-    await sendAlert(e, SlackConfig, true);
+    console.log(e, "error event tracker");
+    // await sendAlert(e, SlackConfig, true);
   }
   console.log("exiting...");
 
