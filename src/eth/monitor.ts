@@ -79,7 +79,7 @@ async function handleAck(v: SwapAckEventType) {
 async function main() {
   let config = await getConfig();
   let eventSyncStartingPoint = await getEventSyncStartingPointByChainID(config.deviceId);
-  let bufferBlocks = await getBufferBlocks(config.chainName);
+  let bufferBlocks = await getBufferBlocks(config.bufferBlocks);
 
   const handlers = {
     Deposit: async (v: DepositEventType, hash: string) => {
