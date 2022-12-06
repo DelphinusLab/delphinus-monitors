@@ -1,10 +1,8 @@
-import { ChainConfig } from "delphinus-deployment/src/types";
-
-export async function getBufferBlocks(config: ChainConfig) {
+export async function getBufferBlocks(buffer?:number) {
     let bufferBlocks = 20;
-    if(config.bufferBlocks != undefined && !isNaN(Number(config.bufferBlocks))){
-        if(config.bufferBlocks >= 0){
-            bufferBlocks = config.bufferBlocks;
+    if(buffer != null && !isNaN(Number(buffer))){
+        if(buffer >= 0){
+            bufferBlocks = buffer;
         }
     }
     return bufferBlocks
