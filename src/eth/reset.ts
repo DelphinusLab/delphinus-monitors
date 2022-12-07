@@ -13,7 +13,7 @@ async function main() {
   );
   console.log("config:", config);
   let eventSyncStartingPoint = await getEventSyncStartingPointByChainID(config.deviceId);
-  let bufferBlocks = await getBufferBlocks(config.chainName);
+  let bufferBlocks = await getBufferBlocks(config.bufferBlocks);
 
   let etracker = new EventTracker(
     config.deviceId,
