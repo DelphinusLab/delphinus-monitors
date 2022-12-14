@@ -73,6 +73,9 @@ async function verify(
       if (new BN(metadata.bridgeInfo.rid).gt(rid)) {
         return;
       }
+      if (metadata.bridgeInfo.verifierID){
+        vid = parseInt(metadata.bridgeInfo.verifierID);
+      }
 
       /**
        * TODO: The exception behavior (e.g. network delay) will cause
@@ -84,6 +87,7 @@ async function verify(
        * 2. check if the rid exists in the db
        * 3. get hash from db, and check if it is pending in eth
        */
+      console.log("Current Verifier Version:" + vid);
       let tx = bridge.verify(command, proof, vid, rid);
       let r = await tx.when("Verify", "transactionHash", (hash: string) => {
         console.log("Get transactionHash", hash);
