@@ -4,7 +4,22 @@ import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 
 async function main() {
-  const path = '../../../../blockNumberBeforeDeployment.json';
+  const root = require("path");
+  let path;
+  if(process.argv[2]){
+    const absolutePath = root.resolve(process.argv[2]);
+    if (!fs.existsSync(absolutePath)) {
+      console.error('Directory does not exist');
+      process.exit(-1);
+    }
+    path = absolutePath + "/blockNumberBeforeDeployment.json";
+  }else{
+    path = "blockNumberBeforeDeployment.json";
+  }
+  if (fs.existsSync(path)) {
+    console.error('WARNING: blockNumberBeforeDeployment.json already exist in current directory, please delete the previous one if you want to regenerate it');
+    process.exit(-1);
+  }
   const { writeFileSync } = require('fs');
 
   interface bnInfo {
@@ -15,10 +30,6 @@ async function main() {
   const configs = await getEnabledEthConfigs(L1ClientRole.Monitor);
   if (configs.length === 0) {
     console.error("Error: No config detected.");
-    process.exit(-1);
-  }
-  if (!fs.existsSync(__dirname + '/../../../../../zkcross-lerna')) {
-    console.error('zkcross-lerna does not exist');
     process.exit(-1);
   }
 
