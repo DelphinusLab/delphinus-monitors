@@ -1,13 +1,20 @@
 import Web3 from "web3";
+import fs from "fs-extra";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 
 async function main() {
+  const root = require("path");
   let path;
   if(process.argv[2]){
-    path = __dirname + "/" + process.argv[2] + "/blockNumberBeforeDeployment.json";
+    const absolutePath = root.resolve(process.argv[2]);
+    if (!fs.existsSync(absolutePath)) {
+      console.error('Directory does not exist');
+      process.exit(-1);
+    }
+    path = absolutePath + "/blockNumberBeforeDeployment.json";
   }else{
-    path = __dirname +  "/blockNumberBeforeDeployment.json";
+    path = "blockNumberBeforeDeployment.json";
   }
   const { writeFileSync } = require('fs');
 
