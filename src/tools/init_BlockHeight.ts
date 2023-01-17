@@ -16,6 +16,10 @@ async function main() {
   }else{
     path = "blockNumberBeforeDeployment.json";
   }
+  if (fs.existsSync(path)) {
+    console.error('WARNING: blockNumberBeforeDeployment.json already exist in current directory, please delete the previous one if you want to regenerate it');
+    process.exit(-1);
+  }
   const { writeFileSync } = require('fs');
 
   interface bnInfo {
