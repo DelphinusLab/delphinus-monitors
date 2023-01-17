@@ -1,10 +1,14 @@
 import Web3 from "web3";
-import fs from "fs-extra";
 import { getEnabledEthConfigs } from "delphinus-deployment/src/config";
 import { L1ClientRole } from "delphinus-deployment/src/types";
 
 async function main() {
-  const path = '../../../../blockNumberBeforeDeployment.json';
+  let path;
+  if(process.argv[2]){
+    path = __dirname + "/" + process.argv[2] + "/blockNumberBeforeDeployment.json";
+  }else{
+    path = __dirname +  "/blockNumberBeforeDeployment.json";
+  }
   const { writeFileSync } = require('fs');
 
   interface bnInfo {
@@ -15,10 +19,6 @@ async function main() {
   const configs = await getEnabledEthConfigs(L1ClientRole.Monitor);
   if (configs.length === 0) {
     console.error("Error: No config detected.");
-    process.exit(-1);
-  }
-  if (!fs.existsSync(__dirname + '/../../../../../zkcross-lerna')) {
-    console.error('zkcross-lerna does not exist');
     process.exit(-1);
   }
 
