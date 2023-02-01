@@ -9,7 +9,7 @@ import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 import { handleReq } from "./swapUtils";
 
 import { sendAlert } from "delphinus-slack-alert/src/index";
-const SlackConfig = require("../../slack-alert-config.json");
+const SlackConfig = require("delphinus-slack-alert/src/sendToSlackTool/slack-alert-config.json");
 const AccountConfig = require("delphinus-deployment/config/substrate-account-config.json");
 require('console-stamp')(console, {format: ':date(yyyy/mm/dd HH:MM:ss)'});
 

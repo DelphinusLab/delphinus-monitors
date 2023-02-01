@@ -18,8 +18,6 @@ import { checkDeployerAccountBalance, getGasWarningAmount } from "../tools/ethBa
 import { getEventSyncStartingPointByChainID } from "../tools/getEventSyncStartingPoint";
 import { getBufferBlocks } from "../tools/getBufferBlocks";
 
-import { sendAlert } from "delphinus-slack-alert/src/index";
-const SlackConfig = require("../../slack-alert-config.json");
 require('console-stamp')(console, {format: ':date(yyyy/mm/dd HH:MM:ss)'});
 
 const BridgeJSON = require("solidity/build/contracts/Bridge.json");
@@ -121,7 +119,6 @@ async function main() {
 
   } catch (e) {
     console.log(e, "error event tracker");
-    // await sendAlert(e, SlackConfig, true);
   }
   console.log("exiting...");
 
