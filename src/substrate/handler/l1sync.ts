@@ -17,6 +17,8 @@ import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 
 const ProofPath = path.resolve(__dirname, "..", "..", "..");
 
+var gasFeeLimit: number;
+
 function getProofPathOfRid(rid: string) {
   return path.resolve(ProofPath, `${rid}.proof`);
 }
@@ -88,6 +90,17 @@ async function verify(
        * 3. get hash from db, and check if it is pending in eth
        */
       console.log("Current Verifier Version:" + vid);
+
+      let estimatedGasFee = await bridge.getEstimatedGasFee(command, proof, vid, rid);
+      console.log("Estimated gas fee is", estimatedGasFee, "ETH");
+      if(typeof estimatedGasFee == "undefined") {
+        console.log("Error: failed to get estimatedGasFee.");
+        process.exit();
+      } else if(estimatedGasFee > gasFeeLimit) {
+        console.log("Error: gas fee is too high.");
+        process.exit();
+      }
+
       let tx = bridge.verify(command, proof, vid, rid);
       let r = await tx.when("Verify", "transactionHash", (hash: string) => {
         console.log("Get transactionHash", hash);
@@ -168,6 +181,7 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
     console.log("----- verify args -----\n");
 
     for (const config of await getEnabledEthConfigs(L1ClientRole.Monitor)) {
+      gasFeeLimit = config.gasFeeLimit;
       await withL1Client(config, false, (l1client: L1Client) => {
         return verify(
           l1client,
