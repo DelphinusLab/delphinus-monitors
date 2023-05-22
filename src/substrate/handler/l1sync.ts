@@ -92,7 +92,7 @@ async function verify(
       console.log("Current Verifier Version:" + vid);
 
       let estimatedGasFee = await bridge.getEstimatedGasFee(command, proof, vid, rid);
-      console.log("Estimated gas fee is", estimatedGasFee, "ETH");
+      console.log("Estimated gas fee is", estimatedGasFee);
       if(typeof estimatedGasFee == "undefined") {
         console.log("Error: failed to get estimatedGasFee.");
         process.exit();
