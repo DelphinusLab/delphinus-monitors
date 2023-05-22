@@ -16,10 +16,17 @@ async function main() {
   }else{
     path = "blockNumberBeforeDeployment.json";
   }
+
+  let existingNetwork = new Array();
+  let blockNumberObject;
   if (fs.existsSync(path)) {
     console.error('WARNING: blockNumberBeforeDeployment.json already exist in current directory, please delete the previous one if you want to regenerate it');
-    process.exit(-1);
+    blockNumberObject = await fs.readJson(path);
+    for(var key in blockNumberObject) {
+      existingNetwork.push(key);
+    }
   }
+
   const { writeFileSync } = require('fs');
 
   interface bnInfo {
@@ -35,6 +42,9 @@ async function main() {
 
   try {
     for(let config of configs) {
+      if(existingNetwork.includes(config.deviceId)) {
+        continue;
+      }
       let web3 = getWeb3FromSource(config.rpcSource);
       await web3.eth.getBlockNumber(async function(err, result) {  
         if (err) {
@@ -44,7 +54,7 @@ async function main() {
         }
       });
     };
-    writeFileSync(path, JSON.stringify(latestBlock,null,2), 'utf8');
+    writeFileSync(path, JSON.stringify(Object.assign(blockNumberObject, latestBlock),null,2), 'utf8');
     console.log("Latest Block Number has been generated");
   } catch (err) {
     console.log('An error has occurred ', err);
