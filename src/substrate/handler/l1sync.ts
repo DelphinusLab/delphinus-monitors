@@ -18,6 +18,8 @@ import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 const ProofPath = path.resolve(__dirname, "..", "..", "..");
 
 var gasFeeLimit: number;
+var decimals: number;
+var symbol: string;
 
 function getProofPathOfRid(rid: string) {
   return path.resolve(ProofPath, `${rid}.proof`);
@@ -92,7 +94,8 @@ async function verify(
       console.log("Current Verifier Version:" + vid);
 
       let estimatedGasFee = await bridge.getEstimatedGasFee(command, proof, vid, rid);
-      console.log("Estimated gas fee is", estimatedGasFee);
+      estimatedGasFee = estimatedGasFee * (10 ** (-decimals));
+      console.log("Estimated gas fee is", estimatedGasFee, symbol);
       if(typeof estimatedGasFee == "undefined") {
         console.log("Error: failed to get estimatedGasFee.");
         process.exit();
@@ -182,6 +185,8 @@ async function l1SyncHandler(rid: string, op: CommandOp, args: any[]) {
 
     for (const config of await getEnabledEthConfigs(L1ClientRole.Monitor)) {
       gasFeeLimit = config.gasFeeLimit;
+      decimals = config.nativeCurrency!.decimals;
+      symbol = config.nativeCurrency!.symbol;
       await withL1Client(config, false, (l1client: L1Client) => {
         return verify(
           l1client,
