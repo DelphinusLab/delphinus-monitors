@@ -1,7 +1,7 @@
 import fs from "fs-extra";
 import { CommandOp } from "delphinus-l2-client-helper/src/swap";
 import { sendAlert } from "delphinus-slack-alert/src/index";
-const SlackConfig = require("delphinus-slack-alert/src/sendToSlackTool/slack-alert-config.json");
+const SlackConfig = require("../../../slack-alert-config.json");
 
 type docType = {
   rid: string,
